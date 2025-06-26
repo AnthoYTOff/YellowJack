@@ -60,7 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } else {
                         try {
                             $end_time = getCurrentDateTime();
-                            $duration = calculateDuration($current_session['start_time'], $end_time);
+                            $duration_data = calculateDuration($current_session['start_time'], $end_time);
+                            $duration = $duration_data['total_minutes'];
                             $salary = $cleaning_count * CLEANING_RATE;
                             
                             $stmt = $db->prepare("
