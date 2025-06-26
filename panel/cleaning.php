@@ -26,7 +26,7 @@ $current_session = $stmt->fetch();
 
 // Traitement des actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!validateCSRF($_POST['csrf_token'])) {
+    if (!validateCSRFToken($_POST['csrf_token'])) {
         $error = 'Token de sécurité invalide.';
     } else {
         $action = $_POST['action'] ?? '';
@@ -248,7 +248,7 @@ $page_title = 'Gestion des Ménages';
                         <div class="card-body">
                             <p>Aucun service en cours. Cliquez sur le bouton ci-dessous pour démarrer votre service de ménage.</p>
                             <form method="POST">
-                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                 <input type="hidden" name="action" value="start_service">
                                 <button type="submit" class="btn btn-success">
                                     <i class="fas fa-play me-2"></i>
@@ -292,7 +292,7 @@ $page_title = 'Gestion des Ménages';
                                                     <span class="badge bg-primary"><?php echo $session['cleaning_count']; ?></span>
                                                 </td>
                                                 <td>
-                                                    <span class="text-success fw-bold"><?php echo number_format($session['salary'], 0); ?>$</span>
+                                                    <span class="text-success fw-bold"><?php echo number_format($session['total_salary'], 0); ?>$</span>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -319,7 +319,7 @@ $page_title = 'Gestion des Ménages';
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                         <input type="hidden" name="action" value="end_service">
                         
                         <div class="mb-3">
