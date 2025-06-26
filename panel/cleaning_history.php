@@ -48,7 +48,7 @@ if ($month) {
 $where_clause = implode(' AND ', $where_conditions);
 
 // Compter le total
-$count_query = "SELECT COUNT(*) FROM cleaning_sessions WHERE $where_clause AND end_time IS NOT NULL";
+$count_query = "SELECT COUNT(*) FROM cleaning_services WHERE $where_clause AND end_time IS NOT NULL";
 $stmt = $db->prepare($count_query);
 $stmt->execute($params);
 $total_records = $stmt->fetchColumn();
@@ -56,7 +56,7 @@ $total_pages = ceil($total_records / $limit);
 
 // Récupérer les sessions
 $query = "
-    SELECT * FROM cleaning_sessions 
+    SELECT * FROM cleaning_services 
     WHERE $where_clause AND end_time IS NOT NULL
     ORDER BY start_time DESC 
     LIMIT $limit OFFSET $offset
@@ -74,7 +74,7 @@ $stats_query = "
         COALESCE(SUM(duration_minutes), 0) as total_duration,
         COALESCE(AVG(cleaning_count), 0) as avg_cleaning_per_session,
         COALESCE(AVG(duration_minutes), 0) as avg_duration
-    FROM cleaning_sessions 
+    FROM cleaning_services 
     WHERE $where_clause AND end_time IS NOT NULL
 ";
 $stmt = $db->prepare($stats_query);

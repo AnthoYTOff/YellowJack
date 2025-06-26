@@ -91,10 +91,10 @@ $cleaning_stats_query = "
     SELECT 
         COUNT(*) as total_sessions,
         COALESCE(SUM(cleaning_count), 0) as total_cleanings,
-        COALESCE(SUM(salary_amount), 0) as total_cleaning_salaries,
+        COALESCE(SUM(total_salary), 0) as total_cleaning_salaries,
         COALESCE(AVG(cleaning_count), 0) as avg_cleanings_per_session,
-        COUNT(DISTINCT employee_id) as cleaning_employees
-    FROM cleaning_sessions
+        COUNT(DISTINCT user_id) as cleaning_employees
+    FROM cleaning_services
     WHERE end_time BETWEEN ? AND ?
 ";
 $stmt = $db->prepare($cleaning_stats_query);
@@ -149,9 +149,9 @@ $top_cleaning_employees_query = "
         u.role,
         COUNT(cs.id) as sessions_count,
         COALESCE(SUM(cs.cleaning_count), 0) as total_cleanings,
-        COALESCE(SUM(cs.salary_amount), 0) as total_salary
+        COALESCE(SUM(cs.total_salary), 0) as total_salary
     FROM users u
-    LEFT JOIN cleaning_sessions cs ON u.id = cs.employee_id AND cs.end_time BETWEEN ? AND ?
+    LEFT JOIN cleaning_services cs ON u.id = cs.user_id AND cs.end_time BETWEEN ? AND ?
     WHERE u.status = 'active'
     GROUP BY u.id, u.first_name, u.last_name, u.role
     ORDER BY total_cleanings DESC

@@ -179,12 +179,12 @@ $query = "
     SELECT 
         u.*,
         COUNT(DISTINCT cs.id) as total_cleaning_sessions,
-        COALESCE(SUM(cs.total_cleaning_count), 0) as total_cleanings,
-        COALESCE(SUM(cs.salary), 0) as total_cleaning_salary,
+        COALESCE(SUM(cs.cleaning_count), 0) as total_cleanings,
+        COALESCE(SUM(cs.total_salary), 0) as total_cleaning_salary,
         COUNT(DISTINCT s.id) as total_sales,
-        COALESCE(SUM(s.commission), 0) as total_commission
+        COALESCE(SUM(s.commission_amount), 0) as total_commission
     FROM users u
-    LEFT JOIN cleaning_sessions cs ON u.id = cs.user_id
+    LEFT JOIN cleaning_services cs ON u.id = cs.user_id
     LEFT JOIN sales s ON u.id = s.user_id
     $where_clause
     GROUP BY u.id

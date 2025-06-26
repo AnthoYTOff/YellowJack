@@ -159,7 +159,7 @@ $system_stats_query = "
         (SELECT COUNT(*) FROM categories) as total_categories,
         (SELECT COUNT(*) FROM customers WHERE id > 1) as total_customers,
         (SELECT COUNT(*) FROM sales WHERE sale_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as sales_last_30_days,
-        (SELECT COUNT(*) FROM cleaning_sessions WHERE end_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as cleaning_last_30_days
+        (SELECT COUNT(*) FROM cleaning_services WHERE end_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as cleaning_last_30_days
 ";
 $stmt = $db->prepare($system_stats_query);
 $stmt->execute();

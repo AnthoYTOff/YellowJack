@@ -20,7 +20,7 @@ $message = '';
 $error = '';
 
 // Vérifier s'il y a un service en cours
-$stmt = $db->prepare("SELECT * FROM cleaning_sessions WHERE user_id = ? AND end_time IS NULL ORDER BY start_time DESC LIMIT 1");
+$stmt = $db->prepare("SELECT * FROM cleaning_services WHERE user_id = ? AND end_time IS NULL ORDER BY start_time DESC LIMIT 1");
 $stmt->execute([$user['id']]);
 $current_session = $stmt->fetch();
 
@@ -35,12 +35,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'start_service':
                 if (!$current_session) {
                     try {
-                        $stmt = $db->prepare("INSERT INTO cleaning_sessions (user_id, start_time) VALUES (?, ?)");
+                        $stmt = $db->prepare("INSERT INTO cleaning_services (user_id, start_time) VALUES (?, ?)");
                         $stmt->execute([$user['id'], getCurrentDateTime()]);
                         $message = 'Service démarré avec succès !';
                         
                         // Recharger la session courante
-                        $stmt = $db->prepare("SELECT * FROM cleaning_sessions WHERE user_id = ? AND end_time IS NULL ORDER BY start_time DESC LIMIT 1");
+                        $stmt = $db->prepare("SELECT * FROM cleaning_services WHERE user_id = ? AND end_time IS NULL ORDER BY start_time DESC LIMIT 1");
                         $stmt->execute([$user['id']]);
                         $current_session = $stmt->fetch();
                     } catch (Exception $e) {
@@ -64,8 +64,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $salary = $cleaning_count * CLEANING_RATE;
                             
                             $stmt = $db->prepare("
-                                UPDATE cleaning_sessions 
-                                SET end_time = ?, cleaning_count = ?, duration_minutes = ?, salary = ? 
+                                UPDATE cleaning_services 
+                                SET end_time = ?, cleaning_count = ?, duration_minutes = ?, total_salary = ? 
                                 WHERE id = ?
                             ");
                             $stmt->execute([
@@ -96,9 +96,9 @@ $stmt = $db->prepare("
     SELECT 
         COUNT(*) as sessions_today,
         COALESCE(SUM(cleaning_count), 0) as total_cleaning_today,
-        COALESCE(SUM(salary), 0) as total_salary_today,
+        COALESCE(SUM(total_salary), 0) as total_salary_today,
         COALESCE(SUM(duration_minutes), 0) as total_duration_today
-    FROM cleaning_sessions 
+    FROM cleaning_services 
     WHERE user_id = ? AND DATE(start_time) = ?
 ");
 $stmt->execute([$user['id'], $today]);
@@ -106,7 +106,7 @@ $today_stats = $stmt->fetch();
 
 // Récupérer les dernières sessions
 $stmt = $db->prepare("
-    SELECT * FROM cleaning_sessions 
+    SELECT * FROM cleaning_services 
     WHERE user_id = ? AND end_time IS NOT NULL 
     ORDER BY start_time DESC 
     LIMIT 5
