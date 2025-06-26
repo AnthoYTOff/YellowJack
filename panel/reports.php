@@ -183,7 +183,7 @@ $category_stats_query = "
         COUNT(DISTINCT p.id) as products_count,
         COALESCE(SUM(sd.quantity), 0) as total_sold,
         COALESCE(SUM(sd.subtotal), 0) as total_revenue
-    FROM categories c
+    FROM product_categories c
     LEFT JOIN products p ON c.id = p.category_id
     LEFT JOIN sale_details sd ON p.id = sd.product_id
     LEFT JOIN sales s ON sd.sale_id = s.id AND s.sale_date BETWEEN ? AND ?

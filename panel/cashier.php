@@ -149,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $stmt = $db->prepare("
     SELECT p.*, c.name as category_name 
     FROM products p 
-    LEFT JOIN categories c ON p.category_id = c.id 
+    LEFT JOIN product_categories c ON p.category_id = c.id 
     WHERE p.is_active = 1 AND p.stock_quantity > 0
     ORDER BY c.name, p.name
 ");

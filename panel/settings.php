@@ -156,7 +156,7 @@ $system_stats_query = "
     SELECT 
         (SELECT COUNT(*) FROM users WHERE status = 'active') as active_users,
         (SELECT COUNT(*) FROM products) as total_products,
-        (SELECT COUNT(*) FROM categories) as total_categories,
+        (SELECT COUNT(*) FROM product_categories) as total_categories,
         (SELECT COUNT(*) FROM customers WHERE id > 1) as total_customers,
         (SELECT COUNT(*) FROM sales WHERE sale_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as sales_last_30_days,
         (SELECT COUNT(*) FROM cleaning_services WHERE end_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as cleaning_last_30_days

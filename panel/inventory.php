@@ -37,13 +37,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     try {
                         // Vérifier si la catégorie existe déjà
-                        $stmt = $db->prepare("SELECT id FROM categories WHERE name = ?");
+                        $stmt = $db->prepare("SELECT id FROM product_categories WHERE name = ?");
                         $stmt->execute([$name]);
                         if ($stmt->fetch()) {
                             $error = 'Une catégorie avec ce nom existe déjà.';
                         } else {
                             $stmt = $db->prepare("
-                                INSERT INTO categories (name, description, created_at) 
+                                INSERT INTO product_categories (name, description, created_at) 
                                 VALUES (?, ?, ?)
                             ");
                             $stmt->execute([$name, $description, getCurrentDateTime()]);
@@ -207,7 +207,7 @@ $query = "
         c.name as category_name,
         COALESCE(SUM(sd.quantity), 0) as total_sold
     FROM products p
-    LEFT JOIN categories c ON p.category_id = c.id
+    LEFT JOIN product_categories c ON p.category_id = c.id
     LEFT JOIN sale_details sd ON p.id = sd.product_id
     $where_clause
     GROUP BY p.id
@@ -219,7 +219,7 @@ $stmt->execute($params);
 $products = $stmt->fetchAll();
 
 // Récupérer les catégories pour les filtres et formulaires
-$categories_query = "SELECT * FROM categories ORDER BY name";
+$categories_query = "SELECT * FROM product_categories ORDER BY name";
 $stmt = $db->prepare($categories_query);
 $stmt->execute();
 $categories = $stmt->fetchAll();
