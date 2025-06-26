@@ -70,7 +70,7 @@ $stats_query = "
     SELECT 
         COUNT(*) as total_sessions,
         COALESCE(SUM(cleaning_count), 0) as total_cleaning,
-        COALESCE(SUM(salary), 0) as total_salary,
+        COALESCE(SUM(total_salary), 0) as total_salary,
         COALESCE(SUM(duration_minutes), 0) as total_duration,
         COALESCE(AVG(cleaning_count), 0) as avg_cleaning_per_session,
         COALESCE(AVG(duration_minutes), 0) as avg_duration
@@ -87,8 +87,8 @@ $monthly_stats_query = "
         DATE_FORMAT(start_time, '%Y-%m') as month,
         COUNT(*) as sessions,
         SUM(cleaning_count) as total_cleaning,
-        SUM(salary) as total_salary
-    FROM cleaning_sessions 
+        SUM(total_salary) as total_salary
+    FROM cleaning_services 
     WHERE user_id = ? AND end_time IS NOT NULL
     GROUP BY DATE_FORMAT(start_time, '%Y-%m')
     ORDER BY month DESC
@@ -302,7 +302,7 @@ $page_title = 'Historique des Ménages';
                                                     <span class="badge bg-primary fs-6"><?php echo $session['cleaning_count']; ?></span>
                                                 </td>
                                                 <td>
-                                                    <span class="text-success fw-bold"><?php echo number_format($session['salary']); ?>$</span>
+                                                    <span class="text-success fw-bold"><?php echo number_format($session['total_salary']); ?>$</span>
                                                 </td>
                                                 <td>
                                                     <span class="badge bg-<?php echo $efficiency_class; ?>">
