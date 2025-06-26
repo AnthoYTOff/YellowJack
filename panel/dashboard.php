@@ -7,7 +7,7 @@
  */
 
 require_once '../includes/auth.php';
-require_login();
+requireLogin();
 
 $auth = getAuth();
 $user = $auth->getCurrentUser();

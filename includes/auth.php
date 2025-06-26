@@ -240,7 +240,7 @@ function getAuth() {
 function requireLogin() {
     $auth = getAuth();
     if (!$auth->isLoggedIn()) {
-        header('Location: /panel/login.php');
+        header('Location: login.php');
         exit;
     }
 }
