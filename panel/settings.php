@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ];
                         
                         foreach ($settings as $key => $value) {
-                            $stmt = $db->prepare("UPDATE settings SET value = ? WHERE key = ?");
+                            $stmt = $db->prepare("UPDATE settings SET `value` = ? WHERE `key` = ?");
                             $stmt->execute([$value, $key]);
                         }
                         
@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = 'L\'URL du webhook Discord n\'est pas valide.';
                 } else {
                     try {
-                        $stmt = $db->prepare("UPDATE settings SET value = ? WHERE key = 'discord_webhook'");
+                        $stmt = $db->prepare("UPDATE settings SET `value` = ? WHERE `key` = 'discord_webhook'");
                         $stmt->execute([$discord_webhook]);
                         $message = 'Configuration Discord mise à jour avec succès !';
                     } catch (Exception $e) {
@@ -141,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Récupérer les paramètres actuels
-$settings_query = "SELECT key, value FROM settings";
+$settings_query = "SELECT `key`, `value` FROM settings";
 $stmt = $db->prepare($settings_query);
 $stmt->execute();
 $settings_raw = $stmt->fetchAll();
