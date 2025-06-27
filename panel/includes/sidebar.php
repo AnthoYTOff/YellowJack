@@ -28,6 +28,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     Tableau de Bord
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link <?php echo $current_page === 'my_stats.php' ? 'active' : ''; ?>" href="my_stats.php">
+                    <i class="fas fa-chart-user"></i>
+                    Mes Statistiques
+                </a>
+            </li>
         </ul>
         
         <!-- Section Ménages (Tous les rôles) -->
