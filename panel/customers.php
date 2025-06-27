@@ -22,7 +22,7 @@ $error = '';
 
 // Traitement des actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!validateCSRF($_POST['csrf_token'])) {
+    if (!validateCSRFToken($_POST['csrf_token'])) {
         $error = 'Token de sécurité invalide.';
     } else {
         $action = $_POST['action'] ?? '';
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $phone = trim($_POST['phone'] ?? '');
                 $email = trim($_POST['email'] ?? '');
                 $is_loyal = isset($_POST['is_loyal']) ? 1 : 0;
-                $discount_percentage = floatval($_POST['discount_percentage'] ?? 0);
+                $loyalty_discount = floatval($_POST['loyalty_discount'] ?? 0);
                 
                 if (empty($name)) {
                     $error = 'Le nom du client est obligatoire.';
@@ -46,10 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $error = 'Un client avec ce nom existe déjà.';
                         } else {
                             $stmt = $db->prepare("
-                                INSERT INTO customers (name, phone, email, is_loyal, discount_percentage, created_at) 
+                                INSERT INTO customers (name, phone, email, is_loyal, loyalty_discount, created_at) 
                                 VALUES (?, ?, ?, ?, ?, ?)
                             ");
-                            $stmt->execute([$name, $phone, $email, $is_loyal, $discount_percentage, getCurrentDateTime()]);
+                            $stmt->execute([$name, $phone, $email, $is_loyal, $loyalty_discount, getCurrentDateTime()]);
                             $message = 'Client ajouté avec succès !';
                         }
                     } catch (Exception $e) {
@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $phone = trim($_POST['phone'] ?? '');
                 $email = trim($_POST['email'] ?? '');
                 $is_loyal = isset($_POST['is_loyal']) ? 1 : 0;
-                $discount_percentage = floatval($_POST['discount_percentage'] ?? 0);
+                $loyalty_discount = floatval($_POST['loyalty_discount'] ?? 0);
                 
                 if (empty($name)) {
                     $error = 'Le nom du client est obligatoire.';
@@ -78,10 +78,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         } else {
                             $stmt = $db->prepare("
                                 UPDATE customers 
-                                SET name = ?, phone = ?, email = ?, is_loyal = ?, discount_percentage = ? 
+                                SET name = ?, phone = ?, email = ?, is_loyal = ?, loyalty_discount = ? 
                                 WHERE id = ?
                             ");
-                            $stmt->execute([$name, $phone, $email, $is_loyal, $discount_percentage, $customer_id]);
+                            $stmt->execute([$name, $phone, $email, $is_loyal, $loyalty_discount, $customer_id]);
                             $message = 'Client modifié avec succès !';
                         }
                     } catch (Exception $e) {
@@ -164,7 +164,7 @@ $stats_query = "
     SELECT 
         COUNT(*) as total_customers,
         SUM(CASE WHEN is_loyal = 1 THEN 1 ELSE 0 END) as loyal_customers,
-        AVG(discount_percentage) as avg_discount
+        AVG(loyalty_discount) as avg_discount
     FROM customers
 ";
 $stmt = $db->prepare($stats_query);
@@ -353,8 +353,8 @@ $page_title = 'Gestion des Clients';
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <?php if ($customer['is_loyal'] && $customer['discount_percentage'] > 0): ?>
-                                                        <span class="text-success fw-bold"><?php echo $customer['discount_percentage']; ?>%</span>
+                                                    <?php if ($customer['is_loyal'] && $customer['loyalty_discount'] > 0): ?>
+                                                        <span class="text-success fw-bold"><?php echo $customer['loyalty_discount']; ?>%</span>
                                                     <?php else: ?>
                                                         <span class="text-muted">-</span>
                                                     <?php endif; ?>
@@ -378,7 +378,7 @@ $page_title = 'Gestion des Clients';
                                                         </button>
                                                         <?php if ($auth->canManageEmployees()): ?>
                                                             <form method="POST" class="d-inline" onsubmit="return confirm('Confirmer le changement de statut ?')">
-                                                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                                                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                                                 <input type="hidden" name="action" value="toggle_loyalty">
                                                                 <input type="hidden" name="customer_id" value="<?php echo $customer['id']; ?>">
                                                                 <button type="submit" class="btn btn-outline-warning">
@@ -454,7 +454,7 @@ $page_title = 'Gestion des Clients';
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                         <input type="hidden" name="action" value="add_customer">
                         
                         <div class="mb-3">
@@ -482,8 +482,8 @@ $page_title = 'Gestion des Clients';
                         </div>
                         
                         <div class="mb-3">
-                            <label for="add_discount_percentage" class="form-label">Pourcentage de réduction (%)</label>
-                            <input type="number" class="form-control" id="add_discount_percentage" name="discount_percentage" 
+                            <label for="add_loyalty_discount" class="form-label">Pourcentage de réduction (%)</label>
+                            <input type="number" class="form-control" id="add_loyalty_discount" name="loyalty_discount" 
                                    min="0" max="100" step="0.1" value="0">
                         </div>
                     </div>
@@ -512,7 +512,7 @@ $page_title = 'Gestion des Clients';
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                         <input type="hidden" name="action" value="edit_customer">
                         <input type="hidden" name="customer_id" id="edit_customer_id">
                         
@@ -541,8 +541,8 @@ $page_title = 'Gestion des Clients';
                         </div>
                         
                         <div class="mb-3">
-                            <label for="edit_discount_percentage" class="form-label">Pourcentage de réduction (%)</label>
-                            <input type="number" class="form-control" id="edit_discount_percentage" name="discount_percentage" 
+                            <label for="edit_loyalty_discount" class="form-label">Pourcentage de réduction (%)</label>
+                            <input type="number" class="form-control" id="edit_loyalty_discount" name="loyalty_discount" 
                                    min="0" max="100" step="0.1">
                         </div>
                     </div>
@@ -568,7 +568,7 @@ $page_title = 'Gestion des Clients';
             document.getElementById('edit_phone').value = customer.phone || '';
             document.getElementById('edit_email').value = customer.email || '';
             document.getElementById('edit_is_loyal').checked = customer.is_loyal == 1;
-            document.getElementById('edit_discount_percentage').value = customer.discount_percentage;
+            document.getElementById('edit_loyalty_discount').value = customer.loyalty_discount;
         }
     </script>
 </body>

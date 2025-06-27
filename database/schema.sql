@@ -63,6 +63,8 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE TABLE IF NOT EXISTS customers (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    email VARCHAR(100),
     discord_id VARCHAR(50),
     is_loyal BOOLEAN DEFAULT FALSE,
     loyalty_discount DECIMAL(5,2) DEFAULT 0,
