@@ -93,9 +93,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $name = trim($_POST['name'] ?? '');
                 $description = trim($_POST['description'] ?? '');
                 $supplier_price = floatval($_POST['supplier_price'] ?? 0);
-        $selling_price = floatval($_POST['selling_price'] ?? 0);
-        $stock_quantity = intval($_POST['stock_quantity'] ?? 0);
-        $min_stock_alert = intval($_POST['min_stock_alert'] ?? 0);
+                $selling_price = floatval($_POST['selling_price'] ?? 0);
+                $stock_quantity = intval($_POST['stock_quantity'] ?? 0);
+                $min_stock_alert = intval($_POST['min_stock_alert'] ?? 0);
                 
                 if (empty($name) || $category_id <= 0 || $selling_price <= 0) {
                     $error = 'Tous les champs obligatoires doivent être remplis correctement.';
@@ -112,8 +112,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 SET category_id = ?, name = ?, description = ?, supplier_price = ?, selling_price = ?, stock_quantity = ?, min_stock_alert = ? 
                                 WHERE id = ?
                             ");
-                            $stmt->execute([$category_id, $name, $description, $supplier_price, $selling_price, $stock_quantity, $min_stock_alert, $product_id]);
-                            $message = 'Produit modifié avec succès !';
+                            $result = $stmt->execute([$category_id, $name, $description, $supplier_price, $selling_price, $stock_quantity, $min_stock_alert, $product_id]);
+                            if ($result && $stmt->rowCount() > 0) {
+                                $message = 'Produit modifié avec succès !';
+                            } else {
+                                $error = 'Aucune modification effectuée. Vérifiez que le produit existe.';
+                            }
                         }
                     } catch (Exception $e) {
                         $error = 'Erreur lors de la modification du produit.';
