@@ -14,6 +14,8 @@ $auth = getAuth();
 $user = $auth->getCurrentUser();
 $db = getDB();
 
+$page_title = 'Classements';
+
 // Période par défaut (ce mois)
 $period = $_GET['period'] ?? 'month';
 $start_date = '';
@@ -153,9 +155,24 @@ try {
     ];
 }
 
-include 'includes/header.php';
 ?>
-
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><?php echo $page_title; ?> - Le Yellowjack</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- CSS personnalisé -->
+    <link href="../assets/css/panel.css" rel="stylesheet">
+</head>
+<body>
+    <?php include 'includes/header.php'; ?>
+    
 <div class="container-fluid">
     <div class="row">
         <?php include 'includes/sidebar.php'; ?>
@@ -429,4 +446,7 @@ function toggleCustomDates() {
 }
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
