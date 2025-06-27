@@ -502,13 +502,13 @@ $page_title = 'Gestion de l\'Inventaire';
                                                 <td>
                                                     <div class="btn-group btn-group-sm">
                                                         <button type="button" class="btn btn-outline-primary" 
-                                                                onclick="editProduct(<?php echo json_encode($product, JSON_HEX_APOS | JSON_HEX_QUOT); ?>)" 
+                                                                onclick="editProduct(<?php echo htmlspecialchars(json_encode($product, JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8'); ?>)" 
                                                                 data-bs-toggle="modal" 
                                                                 data-bs-target="#editProductModal">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
                                                         <button type="button" class="btn btn-outline-warning" 
-                                                                onclick="adjustStock(<?php echo $product['id']; ?>, <?php echo json_encode($product['name']); ?>, <?php echo $product['stock_quantity']; ?>)" 
+                                                                onclick="adjustStock(<?php echo intval($product['id']); ?>, <?php echo htmlspecialchars(json_encode($product['name']), ENT_QUOTES, 'UTF-8'); ?>, <?php echo intval($product['stock_quantity']); ?>)" 
                                                                 data-bs-toggle="modal" 
                                                                 data-bs-target="#adjustStockModal">
                                                             <i class="fas fa-boxes"></i>
