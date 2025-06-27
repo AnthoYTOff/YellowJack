@@ -4,7 +4,7 @@
  * À exécuter pour mettre à jour la base de données distante
  */
 
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 echo "=== Script de migration de la base de données ===\n";
 echo "Correction: employee_id -> user_id dans la table sales\n\n";

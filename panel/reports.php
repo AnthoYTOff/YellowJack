@@ -197,8 +197,7 @@ $category_stats = $stmt->fetchAll();
 // Clients les plus fidèles
 $top_customers_query = "
     SELECT 
-        c.first_name,
-        c.last_name,
+        c.name,
         c.phone,
         COUNT(s.id) as visits_count,
         COALESCE(SUM(s.total_amount), 0) as total_spent,
@@ -206,7 +205,7 @@ $top_customers_query = "
     FROM customers c
     LEFT JOIN sales s ON c.id = s.customer_id AND s.created_at BETWEEN ? AND ?
     WHERE c.id > 1
-    GROUP BY c.id, c.first_name, c.last_name, c.phone
+    GROUP BY c.id, c.name, c.phone
     HAVING visits_count > 0
     ORDER BY total_spent DESC
     LIMIT 10
@@ -537,7 +536,7 @@ $page_title = 'Rapports et Analyses';
                                                 <?php foreach ($top_customers as $customer): ?>
                                                     <tr>
                                                         <td>
-                                                            <?php echo htmlspecialchars($customer['first_name'] . ' ' . $customer['last_name']); ?>
+                                                            <?php echo htmlspecialchars($customer['name']); ?>
                                                             <?php if ($customer['phone']): ?>
                                                                 <br><small class="text-muted"><?php echo htmlspecialchars($customer['phone']); ?></small>
                                                             <?php endif; ?>
