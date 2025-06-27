@@ -270,6 +270,15 @@ function validateCSRFToken($token) {
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
+// Fonctions wrapper pour compatibilité
+function generateCSRF() {
+    return generateCSRFToken();
+}
+
+function validateCSRF($token) {
+    return validateCSRFToken($token);
+}
+
 // Instance globale de Auth
 $auth = new Auth();
 

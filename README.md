@@ -121,7 +121,7 @@ define('DB_PASS', 'votre_mot_de_passe');
 - `categories` : Catégories de produits
 - `customers` : Base clients
 - `sales` : Ventes effectuées
-- `sale_details` : Détails des ventes
+- `sale_items` : Détails des ventes
 - `bonuses` : Primes attribuées
 - `settings` : Paramètres système
 

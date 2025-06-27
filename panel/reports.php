@@ -107,9 +107,9 @@ $top_products_query = "
         p.name,
         p.selling_price,
         SUM(sd.quantity) as total_sold,
-        SUM(sd.subtotal) as total_revenue,
+        SUM(sd.total_price) as total_revenue,
         COUNT(DISTINCT sd.sale_id) as sales_count
-    FROM sale_details sd
+    FROM sale_items sd
     JOIN products p ON sd.product_id = p.id
     JOIN sales s ON sd.sale_id = s.id
     WHERE s.created_at BETWEEN ? AND ?
@@ -182,10 +182,10 @@ $category_stats_query = "
         c.name as category_name,
         COUNT(DISTINCT p.id) as products_count,
         COALESCE(SUM(sd.quantity), 0) as total_sold,
-        COALESCE(SUM(sd.subtotal), 0) as total_revenue
+        COALESCE(SUM(sd.total_price), 0) as total_revenue
     FROM product_categories c
     LEFT JOIN products p ON c.id = p.category_id
-    LEFT JOIN sale_details sd ON p.id = sd.product_id
+    LEFT JOIN sale_items sd ON p.id = sd.product_id
     LEFT JOIN sales s ON sd.sale_id = s.id AND s.created_at BETWEEN ? AND ?
     GROUP BY c.id, c.name
     ORDER BY total_revenue DESC

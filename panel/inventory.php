@@ -59,10 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $category_id = intval($_POST['category_id']);
                 $name = trim($_POST['name'] ?? '');
                 $description = trim($_POST['description'] ?? '');
-                $purchase_price = floatval($_POST['purchase_price'] ?? 0);
+                $supplier_price = floatval($_POST['supplier_price'] ?? 0);
                 $selling_price = floatval($_POST['selling_price'] ?? 0);
                 $stock_quantity = intval($_POST['stock_quantity'] ?? 0);
-                $min_stock = intval($_POST['min_stock'] ?? 0);
+                $min_stock_alert = intval($_POST['min_stock_alert'] ?? 0);
                 
                 if (empty($name) || $category_id <= 0 || $selling_price <= 0) {
                     $error = 'Tous les champs obligatoires doivent être remplis correctement.';
@@ -75,10 +75,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $error = 'Un produit avec ce nom existe déjà.';
                         } else {
                             $stmt = $db->prepare("
-                                INSERT INTO products (category_id, name, description, purchase_price, selling_price, stock_quantity, min_stock, created_at) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                INSERT INTO products (category_id, name, description, supplier_price, selling_price, stock_quantity, min_stock_alert, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                             ");
-                            $stmt->execute([$category_id, $name, $description, $purchase_price, $selling_price, $stock_quantity, $min_stock, getCurrentDateTime()]);
+                            $stmt->execute([$category_id, $name, $description, $supplier_price, $selling_price, $stock_quantity, $min_stock_alert, getCurrentDateTime()]);
                             $message = 'Produit ajouté avec succès !';
                         }
                     } catch (Exception $e) {
@@ -92,10 +92,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $category_id = intval($_POST['category_id']);
                 $name = trim($_POST['name'] ?? '');
                 $description = trim($_POST['description'] ?? '');
-                $purchase_price = floatval($_POST['purchase_price'] ?? 0);
-                $selling_price = floatval($_POST['selling_price'] ?? 0);
-                $stock_quantity = intval($_POST['stock_quantity'] ?? 0);
-                $min_stock = intval($_POST['min_stock'] ?? 0);
+                $supplier_price = floatval($_POST['supplier_price'] ?? 0);
+        $selling_price = floatval($_POST['selling_price'] ?? 0);
+        $stock_quantity = intval($_POST['stock_quantity'] ?? 0);
+        $min_stock_alert = intval($_POST['min_stock_alert'] ?? 0);
                 
                 if (empty($name) || $category_id <= 0 || $selling_price <= 0) {
                     $error = 'Tous les champs obligatoires doivent être remplis correctement.';
@@ -109,10 +109,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         } else {
                             $stmt = $db->prepare("
                                 UPDATE products 
-                                SET category_id = ?, name = ?, description = ?, purchase_price = ?, selling_price = ?, stock_quantity = ?, min_stock = ? 
+                                SET category_id = ?, name = ?, description = ?, supplier_price = ?, selling_price = ?, stock_quantity = ?, min_stock_alert = ? 
                                 WHERE id = ?
                             ");
-                            $stmt->execute([$category_id, $name, $description, $purchase_price, $selling_price, $stock_quantity, $min_stock, $product_id]);
+                            $stmt->execute([$category_id, $name, $description, $supplier_price, $selling_price, $stock_quantity, $min_stock_alert, $product_id]);
                             $message = 'Produit modifié avec succès !';
                         }
                     } catch (Exception $e) {
@@ -186,7 +186,7 @@ if ($category_filter > 0) {
 }
 
 if ($stock_filter === 'low') {
-    $where_conditions[] = 'p.stock_quantity <= p.min_stock';
+    $where_conditions[] = 'p.stock_quantity <= p.min_stock_alert';
 } elseif ($stock_filter === 'out') {
     $where_conditions[] = 'p.stock_quantity = 0';
 }
@@ -208,7 +208,7 @@ $query = "
         COALESCE(SUM(sd.quantity), 0) as total_sold
     FROM products p
     LEFT JOIN product_categories c ON p.category_id = c.id
-    LEFT JOIN sale_details sd ON p.id = sd.product_id
+    LEFT JOIN sale_items sd ON p.id = sd.product_id
     $where_clause
     GROUP BY p.id
     ORDER BY p.name
@@ -229,9 +229,9 @@ $stats_query = "
     SELECT 
         COUNT(*) as total_products,
         SUM(stock_quantity) as total_stock,
-        SUM(CASE WHEN stock_quantity <= min_stock THEN 1 ELSE 0 END) as low_stock_products,
+        SUM(CASE WHEN stock_quantity <= min_stock_alert THEN 1 ELSE 0 END) as low_stock_products,
         SUM(CASE WHEN stock_quantity = 0 THEN 1 ELSE 0 END) as out_of_stock_products,
-        AVG(selling_price - purchase_price) as avg_margin
+        AVG(selling_price - supplier_price) as avg_margin
     FROM products
 ";
 $stmt = $db->prepare($stats_query);
@@ -419,15 +419,15 @@ $page_title = 'Gestion de l\'Inventaire';
                                     <tbody>
                                         <?php foreach ($products as $product): ?>
                                             <?php
-                                            $margin = $product['selling_price'] - $product['purchase_price'];
-                                            $margin_percent = $product['purchase_price'] > 0 ? ($margin / $product['purchase_price']) * 100 : 0;
+                                            $margin = $product['selling_price'] - $product['supplier_price'];
+        $margin_percent = $product['supplier_price'] > 0 ? ($margin / $product['supplier_price']) * 100 : 0;
                                             $stock_status = '';
                                             $stock_class = '';
                                             
                                             if ($product['stock_quantity'] == 0) {
                                                 $stock_status = 'Rupture';
                                                 $stock_class = 'danger';
-                                            } elseif ($product['stock_quantity'] <= $product['min_stock']) {
+                                            } elseif ($product['stock_quantity'] <= $product['min_stock_alert']) {
                                                 $stock_status = 'Stock faible';
                                                 $stock_class = 'warning';
                                             } else {
@@ -450,7 +450,7 @@ $page_title = 'Gestion de l\'Inventaire';
                                                 <td>
                                                     <div>
                                                         <strong class="text-success"><?php echo number_format($product['selling_price'], 2); ?>$</strong>
-                                                        <br><small class="text-muted">Achat: <?php echo number_format($product['purchase_price'], 2); ?>$</small>
+                                                        <br><small class="text-muted">Achat: <?php echo number_format($product['supplier_price'], 2); ?>$</small>
                                                     </div>
                                                 </td>
                                                 <td>
@@ -464,7 +464,7 @@ $page_title = 'Gestion de l\'Inventaire';
                                                 <td>
                                                     <div class="text-center">
                                                         <span class="fw-bold"><?php echo number_format($product['stock_quantity']); ?></span>
-                                                        <br><small class="text-muted">Min: <?php echo $product['min_stock']; ?></small>
+                                                        <br><small class="text-muted">Min: <?php echo $product['min_stock_alert']; ?></small>
                                                     </div>
                                                 </td>
                                                 <td>
@@ -480,13 +480,13 @@ $page_title = 'Gestion de l\'Inventaire';
                                                 <td>
                                                     <div class="btn-group btn-group-sm">
                                                         <button type="button" class="btn btn-outline-primary" 
-                                                                onclick="editProduct(<?php echo htmlspecialchars(json_encode($product)); ?>)" 
+                                                                onclick="editProduct(<?php echo json_encode($product, JSON_HEX_APOS | JSON_HEX_QUOT); ?>)" 
                                                                 data-bs-toggle="modal" 
                                                                 data-bs-target="#editProductModal">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
                                                         <button type="button" class="btn btn-outline-warning" 
-                                                                onclick="adjustStock(<?php echo $product['id']; ?>, '<?php echo htmlspecialchars($product['name']); ?>', <?php echo $product['stock_quantity']; ?>)" 
+                                                                onclick="adjustStock(<?php echo $product['id']; ?>, <?php echo json_encode($product['name']); ?>, <?php echo $product['stock_quantity']; ?>)" 
                                                                 data-bs-toggle="modal" 
                                                                 data-bs-target="#adjustStockModal">
                                                             <i class="fas fa-boxes"></i>
@@ -630,8 +630,8 @@ $page_title = 'Gestion de l\'Inventaire';
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="add_purchase_price" class="form-label">Prix d'achat ($)</label>
-                                    <input type="number" class="form-control" id="add_purchase_price" name="purchase_price" step="0.01" min="0">
+                                    <label for="add_supplier_price" class="form-label">Prix d'achat ($)</label>
+                                <input type="number" class="form-control" id="add_supplier_price" name="supplier_price" step="0.01" min="0">
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -651,8 +651,8 @@ $page_title = 'Gestion de l\'Inventaire';
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="add_min_stock" class="form-label">Stock minimum</label>
-                                    <input type="number" class="form-control" id="add_min_stock" name="min_stock" min="0" value="0">
+                                    <label for="add_min_stock_alert" class="form-label">Stock minimum</label>
+                                <input type="number" class="form-control" id="add_min_stock_alert" name="min_stock_alert" min="0" value="0">
                                 </div>
                             </div>
                         </div>
@@ -715,8 +715,8 @@ $page_title = 'Gestion de l\'Inventaire';
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="edit_purchase_price" class="form-label">Prix d'achat ($)</label>
-                                    <input type="number" class="form-control" id="edit_purchase_price" name="purchase_price" step="0.01" min="0">
+                                    <label for="edit_supplier_price" class="form-label">Prix d'achat ($)</label>
+                                <input type="number" class="form-control" id="edit_supplier_price" name="supplier_price" step="0.01" min="0">
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -736,8 +736,8 @@ $page_title = 'Gestion de l\'Inventaire';
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="edit_min_stock" class="form-label">Stock minimum</label>
-                                    <input type="number" class="form-control" id="edit_min_stock" name="min_stock" min="0">
+                                    <label for="edit_min_stock_alert" class="form-label">Stock minimum</label>
+                                <input type="number" class="form-control" id="edit_min_stock_alert" name="min_stock_alert" min="0">
                                 </div>
                             </div>
                         </div>
@@ -820,10 +820,10 @@ $page_title = 'Gestion de l\'Inventaire';
             document.getElementById('edit_product_name').value = product.name;
             document.getElementById('edit_category_id').value = product.category_id;
             document.getElementById('edit_product_description').value = product.description || '';
-            document.getElementById('edit_purchase_price').value = product.purchase_price;
+            document.getElementById('edit_supplier_price').value = product.supplier_price;
             document.getElementById('edit_selling_price').value = product.selling_price;
             document.getElementById('edit_stock_quantity').value = product.stock_quantity;
-            document.getElementById('edit_min_stock').value = product.min_stock;
+            document.getElementById('edit_min_stock_alert').value = product.min_stock_alert;
         }
         
         function adjustStock(productId, productName, currentStock) {
