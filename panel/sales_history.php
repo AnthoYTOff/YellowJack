@@ -40,12 +40,12 @@ if (!$auth->canManageEmployees() || $show_all !== '1') {
 }
 
 if ($date_from) {
-    $where_conditions[] = 'DATE(s.sale_date) >= ?';
+    $where_conditions[] = 'DATE(s.created_at) >= ?';
     $params[] = $date_from;
 }
 
 if ($date_to) {
-    $where_conditions[] = 'DATE(s.sale_date) <= ?';
+    $where_conditions[] = 'DATE(s.created_at) <= ?';
     $params[] = $date_to;
 }
 
@@ -86,7 +86,7 @@ $query = "
     LEFT JOIN customers c ON s.customer_id = c.id 
     LEFT JOIN users u ON s.user_id = u.id 
     $where_clause
-    ORDER BY s.sale_date DESC 
+    ORDER BY s.created_at DESC 
     LIMIT $limit OFFSET $offset
 ";
 $stmt = $db->prepare($query);
@@ -98,7 +98,7 @@ $stats_query = "
     SELECT 
         COUNT(*) as total_sales,
         COALESCE(SUM(s.final_amount), 0) as total_revenue,
-        COALESCE(SUM(s.commission), 0) as total_commission,
+        COALESCE(SUM(s.employee_commission), 0) as total_commission,
         COALESCE(AVG(s.final_amount), 0) as avg_sale_amount
     FROM sales s 
     $where_clause
@@ -292,7 +292,7 @@ $page_title = 'Historique des Ventes';
                                                 <td>
                                                     <span class="badge bg-primary">#<?php echo $sale['id']; ?></span>
                                                 </td>
-                                                <td><?php echo formatDateTime($sale['sale_date']); ?></td>
+                                                <td><?php echo formatDateTime($sale['created_at']); ?></td>
                                                 <?php if ($auth->canManageEmployees() && $show_all === '1'): ?>
                                                     <td>
                                                         <?php echo htmlspecialchars($sale['first_name'] . ' ' . $sale['last_name']); ?>
@@ -320,7 +320,7 @@ $page_title = 'Historique des Ventes';
                                                     <span class="fw-bold text-success"><?php echo number_format($sale['final_amount'], 2); ?>$</span>
                                                 </td>
                                                 <td>
-                                                    <span class="text-warning fw-bold"><?php echo number_format($sale['commission'], 2); ?>$</span>
+                                                    <span class="text-warning fw-bold"><?php echo number_format($sale['employee_commission'], 2); ?>$</span>
                                                 </td>
                                                 <td>
                                                     <button type="button" class="btn btn-outline-primary btn-sm" 

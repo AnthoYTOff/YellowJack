@@ -75,12 +75,12 @@ $stats_query = "
     SELECT 
         COUNT(DISTINCT s.id) as total_sales,
         COALESCE(SUM(s.total_amount), 0) as total_revenue,
-        COALESCE(SUM(s.commission_amount), 0) as total_commissions,
+        COALESCE(SUM(s.employee_commission), 0) as total_commissions,
         COALESCE(AVG(s.total_amount), 0) as avg_sale_amount,
         COUNT(DISTINCT s.customer_id) as unique_customers,
         COUNT(DISTINCT s.employee_id) as active_employees
     FROM sales s
-    WHERE s.sale_date BETWEEN ? AND ?
+    WHERE s.created_at BETWEEN ? AND ?
 ";
 $stmt = $db->prepare($stats_query);
 $stmt->execute([$start_date, $end_date]);
@@ -112,7 +112,7 @@ $top_products_query = "
     FROM sale_details sd
     JOIN products p ON sd.product_id = p.id
     JOIN sales s ON sd.sale_id = s.id
-    WHERE s.sale_date BETWEEN ? AND ?
+    WHERE s.created_at BETWEEN ? AND ?
     GROUP BY p.id, p.name, p.selling_price
     ORDER BY total_sold DESC
     LIMIT 10
@@ -129,9 +129,9 @@ $top_sales_employees_query = "
         u.role,
         COUNT(s.id) as sales_count,
         COALESCE(SUM(s.total_amount), 0) as total_revenue,
-        COALESCE(SUM(s.commission_amount), 0) as total_commissions
+        COALESCE(SUM(s.employee_commission), 0) as total_commissions
     FROM users u
-    LEFT JOIN sales s ON u.id = s.employee_id AND s.sale_date BETWEEN ? AND ?
+    LEFT JOIN sales s ON u.id = s.employee_id AND s.created_at BETWEEN ? AND ?
     WHERE u.role IN ('CDI', 'Responsable', 'Patron') AND u.status = 'active'
     GROUP BY u.id, u.first_name, u.last_name, u.role
     ORDER BY total_revenue DESC
@@ -164,12 +164,12 @@ $top_cleaning_employees = $stmt->fetchAll();
 // Évolution des ventes (par jour)
 $sales_evolution_query = "
     SELECT 
-        DATE(s.sale_date) as sale_day,
+        DATE(s.created_at) as sale_day,
         COUNT(s.id) as sales_count,
         COALESCE(SUM(s.total_amount), 0) as daily_revenue
     FROM sales s
-    WHERE s.sale_date BETWEEN ? AND ?
-    GROUP BY DATE(s.sale_date)
+    WHERE s.created_at BETWEEN ? AND ?
+    GROUP BY DATE(s.created_at)
     ORDER BY sale_day
 ";
 $stmt = $db->prepare($sales_evolution_query);
@@ -186,7 +186,7 @@ $category_stats_query = "
     FROM product_categories c
     LEFT JOIN products p ON c.id = p.category_id
     LEFT JOIN sale_details sd ON p.id = sd.product_id
-    LEFT JOIN sales s ON sd.sale_id = s.id AND s.sale_date BETWEEN ? AND ?
+    LEFT JOIN sales s ON sd.sale_id = s.id AND s.created_at BETWEEN ? AND ?
     GROUP BY c.id, c.name
     ORDER BY total_revenue DESC
 ";
@@ -204,7 +204,7 @@ $top_customers_query = "
         COALESCE(SUM(s.total_amount), 0) as total_spent,
         COALESCE(AVG(s.total_amount), 0) as avg_spent
     FROM customers c
-    LEFT JOIN sales s ON c.id = s.customer_id AND s.sale_date BETWEEN ? AND ?
+    LEFT JOIN sales s ON c.id = s.customer_id AND s.created_at BETWEEN ? AND ?
     WHERE c.id > 1
     GROUP BY c.id, c.first_name, c.last_name, c.phone
     HAVING visits_count > 0
