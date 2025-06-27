@@ -88,7 +88,7 @@ $stats_query = "
         COALESCE(SUM(s.employee_commission), 0) as total_commissions,
         COALESCE(AVG(s.total_amount), 0) as avg_sale_amount,
         COUNT(DISTINCT s.customer_id) as unique_customers,
-        COUNT(DISTINCT s.employee_id) as active_employees
+        COUNT(DISTINCT s.user_id) as active_employees
     FROM sales s
     WHERE s.created_at BETWEEN ? AND ?
 ";
@@ -141,7 +141,7 @@ $top_sales_employees_query = "
         COALESCE(SUM(s.total_amount), 0) as total_revenue,
         COALESCE(SUM(s.employee_commission), 0) as total_commissions
     FROM users u
-    LEFT JOIN sales s ON u.id = s.employee_id AND s.created_at BETWEEN ? AND ?
+    LEFT JOIN sales s ON u.id = s.user_id AND s.created_at BETWEEN ? AND ?
     WHERE u.role IN ('CDI', 'Responsable', 'Patron') AND u.status = 'active'
     GROUP BY u.id, u.first_name, u.last_name, u.role
     ORDER BY total_revenue DESC

@@ -72,7 +72,7 @@ function createBasicTables($pdo) {
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS sales (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            employee_id INTEGER,
+            user_id INTEGER,
             customer_id INTEGER,
             total_amount DECIMAL(10,2) NOT NULL,
             employee_commission DECIMAL(10,2) DEFAULT 0,
