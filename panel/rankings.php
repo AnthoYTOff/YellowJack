@@ -173,7 +173,7 @@ include 'includes/header.php';
             </div>
 
             <!-- Filtres de période -->
-            <div class="card mb-4">
+            <div class="card mb-4 period-filters">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="fas fa-filter"></i> Filtres</h5>
                 </div>
@@ -210,7 +210,7 @@ include 'includes/header.php';
             <!-- Statistiques globales -->
             <div class="row mb-4">
                 <div class="col-md-3">
-                    <div class="card text-white bg-primary">
+                    <div class="card text-white bg-primary global-stats-card">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
@@ -225,7 +225,7 @@ include 'includes/header.php';
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card text-white bg-success">
+                    <div class="card text-white bg-success global-stats-card">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
@@ -240,7 +240,7 @@ include 'includes/header.php';
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card text-white bg-info">
+                    <div class="card text-white bg-info global-stats-card">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
@@ -256,7 +256,7 @@ include 'includes/header.php';
                 </div>
                 <?php if ($auth->canAccessCashRegister() && isset($global_stats['ca_total_equipe'])): ?>
                 <div class="col-md-3">
-                    <div class="card text-white bg-warning">
+                    <div class="card text-white bg-warning global-stats-card">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
@@ -285,7 +285,7 @@ include 'includes/header.php';
                         </div>
                     <?php else: ?>
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-striped table-hover rankings-table">
                                 <thead class="table-dark">
                                     <tr>
                                         <th>Rang</th>
@@ -303,24 +303,26 @@ include 'includes/header.php';
                                     <?php foreach ($cleaning_rankings as $index => $employee): ?>
                                         <tr class="<?php echo $employee['id'] == $user['id'] ? 'table-warning' : ''; ?>">
                                             <td>
-                                                <?php if ($index === 0): ?>
-                                                    <i class="fas fa-trophy text-warning"></i> 1
-                                                <?php elseif ($index === 1): ?>
-                                                    <i class="fas fa-medal text-secondary"></i> 2
-                                                <?php elseif ($index === 2): ?>
-                                                    <i class="fas fa-medal text-warning"></i> 3
-                                                <?php else: ?>
-                                                    <?php echo $index + 1; ?>
-                                                <?php endif; ?>
+                                                <div class="ranking-position">
+                                                    <?php if ($index === 0): ?>
+                                                        <i class="fas fa-trophy"></i> 1
+                                                    <?php elseif ($index === 1): ?>
+                                                        <i class="fas fa-medal text-secondary"></i> 2
+                                                    <?php elseif ($index === 2): ?>
+                                                        <i class="fas fa-medal text-warning"></i> 3
+                                                    <?php else: ?>
+                                                        <?php echo $index + 1; ?>
+                                                    <?php endif; ?>
+                                                </div>
                                             </td>
                                             <td>
                                                 <strong><?php echo htmlspecialchars($employee['first_name'] . ' ' . $employee['last_name']); ?></strong>
                                                 <?php if ($employee['id'] == $user['id']): ?>
-                                                    <span class="badge bg-primary ms-1">Vous</span>
+                                                    <span class="badge user-badge ms-1">Vous</span>
                                                 <?php endif; ?>
                                             </td>
                                             <td>
-                                                <span class="badge bg-<?php echo $employee['role'] === 'admin' ? 'danger' : ($employee['role'] === 'manager' ? 'warning' : 'secondary'); ?>">
+                                                <span class="badge role-badge bg-<?php echo $employee['role'] === 'admin' ? 'danger' : ($employee['role'] === 'manager' ? 'warning' : 'secondary'); ?>">
                                                     <?php echo ucfirst($employee['role']); ?>
                                                 </span>
                                             </td>
@@ -352,7 +354,7 @@ include 'includes/header.php';
                         </div>
                     <?php else: ?>
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-striped table-hover rankings-table">
                                 <thead class="table-dark">
                                     <tr>
                                         <th>Rang</th>
@@ -369,24 +371,26 @@ include 'includes/header.php';
                                     <?php foreach ($sales_rankings as $index => $employee): ?>
                                         <tr class="<?php echo $employee['id'] == $user['id'] ? 'table-warning' : ''; ?>">
                                             <td>
-                                                <?php if ($index === 0): ?>
-                                                    <i class="fas fa-trophy text-warning"></i> 1
-                                                <?php elseif ($index === 1): ?>
-                                                    <i class="fas fa-medal text-secondary"></i> 2
-                                                <?php elseif ($index === 2): ?>
-                                                    <i class="fas fa-medal text-warning"></i> 3
-                                                <?php else: ?>
-                                                    <?php echo $index + 1; ?>
-                                                <?php endif; ?>
+                                                <div class="ranking-position">
+                                                    <?php if ($index === 0): ?>
+                                                        <i class="fas fa-trophy"></i> 1
+                                                    <?php elseif ($index === 1): ?>
+                                                        <i class="fas fa-medal text-secondary"></i> 2
+                                                    <?php elseif ($index === 2): ?>
+                                                        <i class="fas fa-medal text-warning"></i> 3
+                                                    <?php else: ?>
+                                                        <?php echo $index + 1; ?>
+                                                    <?php endif; ?>
+                                                </div>
                                             </td>
                                             <td>
                                                 <strong><?php echo htmlspecialchars($employee['first_name'] . ' ' . $employee['last_name']); ?></strong>
                                                 <?php if ($employee['id'] == $user['id']): ?>
-                                                    <span class="badge bg-primary ms-1">Vous</span>
+                                                    <span class="badge user-badge ms-1">Vous</span>
                                                 <?php endif; ?>
                                             </td>
                                             <td>
-                                                <span class="badge bg-<?php echo $employee['role'] === 'admin' ? 'danger' : ($employee['role'] === 'manager' ? 'warning' : 'secondary'); ?>">
+                                                <span class="badge role-badge bg-<?php echo $employee['role'] === 'admin' ? 'danger' : ($employee['role'] === 'manager' ? 'warning' : 'secondary'); ?>">
                                                     <?php echo ucfirst($employee['role']); ?>
                                                 </span>
                                             </td>

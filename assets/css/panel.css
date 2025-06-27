@@ -624,6 +624,240 @@ main {
     background: var(--primary-color);
 }
 
+/* Styles pour les classements */
+.rankings-table {
+    background: white;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.rankings-table .table-dark {
+    background: linear-gradient(45deg, var(--primary-color), var(--accent-color)) !important;
+    color: white;
+}
+
+.rankings-table .table-dark th {
+    border: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    letter-spacing: 0.5px;
+    padding: 1rem 0.75rem;
+}
+
+.rankings-table tbody tr {
+    transition: var(--transition);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.rankings-table tbody tr:hover {
+    background: rgba(218, 165, 32, 0.1);
+    transform: translateX(3px);
+}
+
+.rankings-table tbody tr.table-warning {
+    background: linear-gradient(45deg, rgba(255, 193, 7, 0.2), rgba(255, 215, 0, 0.2)) !important;
+    border-left: 4px solid var(--secondary-color);
+    font-weight: 600;
+}
+
+.rankings-table tbody tr.table-warning:hover {
+    background: linear-gradient(45deg, rgba(255, 193, 7, 0.3), rgba(255, 215, 0, 0.3)) !important;
+}
+
+.rankings-table tbody td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+    border-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Médailles et trophées */
+.ranking-position {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+.ranking-position .fa-trophy {
+    color: #FFD700;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    animation: trophy-glow 2s ease-in-out infinite alternate;
+}
+
+.ranking-position .fa-medal {
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.ranking-position .fa-medal.text-secondary {
+    color: #C0C0C0 !important; /* Argent */
+}
+
+.ranking-position .fa-medal.text-warning {
+    color: #CD7F32 !important; /* Bronze */
+}
+
+@keyframes trophy-glow {
+    from {
+        filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+    }
+    to {
+        filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8));
+    }
+}
+
+/* Badges de rôles */
+.role-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.role-badge.bg-danger {
+    background: linear-gradient(45deg, #dc3545, #e74c3c) !important;
+}
+
+.role-badge.bg-warning {
+    background: linear-gradient(45deg, var(--secondary-color), #FFD700) !important;
+    color: var(--dark-color) !important;
+}
+
+.role-badge.bg-secondary {
+    background: linear-gradient(45deg, #6c757d, #495057) !important;
+}
+
+/* Badge "Vous" */
+.user-badge {
+    background: linear-gradient(45deg, var(--primary-color), var(--accent-color)) !important;
+    color: white !important;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(139, 69, 19, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(139, 69, 19, 0.8);
+    }
+}
+
+/* Statistiques globales pour classements */
+.global-stats-card {
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    transition: var(--transition);
+    position: relative;
+}
+
+.global-stats-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--secondary-color), #FFD700, var(--secondary-color));
+}
+
+.global-stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.global-stats-card .card-body {
+    padding: 1.5rem;
+}
+
+.global-stats-card h4 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.global-stats-card .card-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+.global-stats-card .fa-2x {
+    opacity: 0.7;
+    transition: var(--transition);
+}
+
+.global-stats-card:hover .fa-2x {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Filtres de période */
+.period-filters {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--secondary-color);
+}
+
+.period-filters .card-header {
+    background: linear-gradient(45deg, var(--light-color), #ffffff);
+    border-bottom: 2px solid var(--secondary-color);
+}
+
+/* Responsive pour classements */
+@media (max-width: 768px) {
+    .rankings-table {
+        font-size: 0.875rem;
+    }
+    
+    .rankings-table tbody td {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .global-stats-card h4 {
+        font-size: 1.5rem;
+    }
+    
+    .global-stats-card .card-text {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .rankings-table {
+        font-size: 0.8rem;
+    }
+    
+    .rankings-table .table-dark th {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.75rem;
+    }
+    
+    .rankings-table tbody td {
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .role-badge {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    .user-badge {
+        font-size: 0.6rem;
+        padding: 0.15rem 0.3rem;
+    }
+}
+
 /* Print styles */
 @media print {
     .sidebar,
@@ -645,5 +879,15 @@ main {
     body {
         background: white !important;
         color: black !important;
+    }
+    
+    .rankings-table tbody tr.table-warning {
+        background: #f8f9fa !important;
+        border-left: 4px solid #000 !important;
+    }
+    
+    .fa-trophy,
+    .fa-medal {
+        color: #000 !important;
     }
 }
