@@ -19,7 +19,7 @@ if (!isset($user)) {
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
-    <div class="position-sticky pt-3">
+    <div class="sidebar-sticky pt-3">
         <!-- Navigation principale -->
         <ul class="nav flex-column">
             <li class="nav-item">
