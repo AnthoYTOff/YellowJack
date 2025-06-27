@@ -52,10 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         } else {
                             // Ajouter la prime
                             $stmt = $db->prepare("
-                                INSERT INTO bonuses (employee_id, amount, reason, bonus_date, created_by, created_at) 
-                                VALUES (?, ?, ?, ?, ?, NOW())
+                                INSERT INTO bonuses (user_id, amount, reason, given_by) 
+                                VALUES (?, ?, ?, ?)
                             ");
-                            $stmt->execute([$employee_id, $amount, $reason, $bonus_date, $user['id']]);
+                            $stmt->execute([$employee_id, $amount, $reason, $user['id']]);
                             
                             $message = 'Prime de ' . number_format($amount, 2) . '$ ajoutée avec succès pour ' . 
                                       $employee['first_name'] . ' ' . $employee['last_name'] . ' !';
@@ -136,10 +136,10 @@ $bonuses_query = "
         creator.first_name as creator_first_name,
         creator.last_name as creator_last_name
     FROM bonuses b
-    JOIN users u ON b.employee_id = u.id
-    LEFT JOIN users creator ON b.created_by = creator.id
+    JOIN users u ON b.user_id = u.id
+    LEFT JOIN users creator ON b.given_by = creator.id
     $where_clause
-    ORDER BY b.bonus_date DESC, b.created_at DESC
+    ORDER BY b.created_at DESC
     LIMIT $per_page OFFSET $offset
 ";
 
@@ -151,7 +151,7 @@ $bonuses = $stmt->fetchAll();
 $count_query = "
     SELECT COUNT(*) as total
     FROM bonuses b
-    JOIN users u ON b.employee_id = u.id
+    JOIN users u ON b.user_id = u.id
     $where_clause
 ";
 
@@ -172,9 +172,9 @@ $stats_query = "
         COUNT(*) as total_bonuses,
         COALESCE(SUM(amount), 0) as total_amount,
         COALESCE(AVG(amount), 0) as avg_amount,
-        COUNT(DISTINCT employee_id) as employees_with_bonuses
+        COUNT(DISTINCT user_id) as employees_with_bonuses
     FROM bonuses 
-    WHERE YEAR(bonus_date) = ?
+    WHERE YEAR(created_at) = ?
 ";
 $stmt = $db->prepare($stats_query);
 $stmt->execute([$filter_year]);
@@ -183,12 +183,12 @@ $stats = $stmt->fetch();
 // Statistiques mensuelles pour le graphique
 $monthly_stats_query = "
     SELECT 
-        MONTH(bonus_date) as month,
+        MONTH(created_at) as month,
         COUNT(*) as count,
         SUM(amount) as total
     FROM bonuses 
-    WHERE YEAR(bonus_date) = ?
-    GROUP BY MONTH(bonus_date)
+    WHERE YEAR(created_at) = ?
+    GROUP BY MONTH(created_at)
     ORDER BY month
 ";
 $stmt = $db->prepare($monthly_stats_query);
@@ -204,8 +204,8 @@ $top_employees_query = "
         COUNT(*) as bonus_count,
         SUM(b.amount) as total_amount
     FROM bonuses b
-    JOIN users u ON b.employee_id = u.id
-    WHERE YEAR(b.bonus_date) = ?
+    JOIN users u ON b.user_id = u.id
+    WHERE YEAR(b.created_at) = ?
     GROUP BY u.id, u.first_name, u.last_name, u.role
     ORDER BY total_amount DESC
     LIMIT 5
