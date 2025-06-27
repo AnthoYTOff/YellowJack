@@ -6,8 +6,18 @@
  * @version 1.0
  */
 
-require_once '../includes/auth.php';
-require_once '../config/database.php';
+// Utiliser les configurations locales pour éviter les problèmes réseau
+if (file_exists('../includes/auth_local.php')) {
+    require_once '../includes/auth_local.php';
+} else {
+    require_once '../includes/auth.php';
+}
+
+if (file_exists('../config/database_local.php')) {
+    require_once '../config/database_local.php';
+} else {
+    require_once '../config/database.php';
+}
 
 // Vérifier l'authentification et les permissions
 requireLogin();
