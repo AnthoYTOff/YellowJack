@@ -135,8 +135,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </li>
             <li class="nav-item">
                 <a class="nav-link <?php echo $current_page === 'analytics.php' ? 'active' : ''; ?>" href="analytics.php">
-                    <i class="fas fa-analytics"></i>
-                    Analyses
+                    <i class="fas fa-chart-pie"></i>
+                    Analytics
                 </a>
             </li>
             <?php endif; ?>
