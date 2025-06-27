@@ -20,6 +20,12 @@ $db = getDB();
 $message = '';
 $error = '';
 
+// Vérifier s'il y a un message de succès en session
+if (isset($_SESSION['success_message'])) {
+    $message = $_SESSION['success_message'];
+    unset($_SESSION['success_message']);
+}
+
 // Traitement des actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!validateCSRF($_POST['csrf_token'])) {
@@ -47,7 +53,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 VALUES (?, ?, ?)
                             ");
                             $stmt->execute([$name, $description, getCurrentDateTime()]);
-                            $message = 'Catégorie ajoutée avec succès !';
+                            $_SESSION['success_message'] = 'Catégorie ajoutée avec succès !';
+                            header('Location: inventory.php');
+                            exit;
                         }
                     } catch (Exception $e) {
                         $error = 'Erreur lors de l\'ajout de la catégorie.';
@@ -76,10 +84,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         } else {
                             $stmt = $db->prepare("
                                 INSERT INTO products (category_id, name, description, supplier_price, selling_price, stock_quantity, min_stock_alert, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                             ");
                             $stmt->execute([$category_id, $name, $description, $supplier_price, $selling_price, $stock_quantity, $min_stock_alert, getCurrentDateTime()]);
-                            $message = 'Produit ajouté avec succès !';
+                            $_SESSION['success_message'] = 'Produit ajouté avec succès !';
+                            header('Location: inventory.php');
+                            exit;
                         }
                     } catch (Exception $e) {
                         $error = 'Erreur lors de l\'ajout du produit.';
@@ -114,7 +124,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             ");
                             $result = $stmt->execute([$category_id, $name, $description, $supplier_price, $selling_price, $stock_quantity, $min_stock_alert, $product_id]);
                             if ($result && $stmt->rowCount() > 0) {
-                                $message = 'Produit modifié avec succès !';
+                                $_SESSION['success_message'] = 'Produit modifié avec succès !';
+                                header('Location: inventory.php');
+                                exit;
                             } else {
                                 $error = 'Aucune modification effectuée. Vérifiez que le produit existe.';
                             }
@@ -153,7 +165,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $stmt->execute([$new_stock, $product_id]);
                                 
                                 // Enregistrer l'ajustement (optionnel - table d'historique)
-                                $message = 'Stock ajusté avec succès !';
+                                $_SESSION['success_message'] = 'Stock ajusté avec succès !';
+                                header('Location: inventory.php');
+                                exit;
                             }
                         }
                     } catch (Exception $e) {
