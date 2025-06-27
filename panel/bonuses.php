@@ -57,6 +57,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             ");
                             $stmt->execute([$employee_id, $amount, $reason, $bonus_date, $user['id']]);
                             
+                            // Envoyer le webhook Discord
+                            sendBonusWebhook($employee, $user, $amount, $reason);
+                            
                             $message = 'Prime de ' . number_format($amount, 2) . '$ ajoutée avec succès pour ' . 
                                       $employee['first_name'] . ' ' . $employee['last_name'] . ' !';
                         }

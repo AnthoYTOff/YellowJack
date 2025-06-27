@@ -37,6 +37,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     try {
                         $stmt = $db->prepare("INSERT INTO cleaning_services (user_id, start_time) VALUES (?, ?)");
                         $stmt->execute([$user['id'], getCurrentDateTime()]);
+                        
+                        // Envoyer le webhook Discord
+                        sendCleaningWebhook($user, "🟢 Début de service de ménage", [
+                            '⏰ Heure de début' => formatDateTime(getCurrentDateTime())
+                        ]);
+                        
                         $message = 'Service démarré avec succès !';
                         
                         // Recharger la session courante
@@ -75,6 +81,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $duration,
                                 $salary,
                                 $current_session['id']
+                            ]);
+                            
+                            // Envoyer le webhook Discord
+                            sendCleaningWebhook($user, "🔴 Fin de service de ménage", [
+                                '⏰ Heure de fin' => formatDateTime($end_time),
+                                '⏱️ Durée' => "{$duration} minutes",
+                                '🧹 Ménages effectués' => $cleaning_count,
+                                '💰 Salaire gagné' => "{$salary}$"
                             ]);
                             
                             $message = "Service terminé ! Durée: {$duration} minutes, Ménages: {$cleaning_count}, Salaire: {$salary}$";
