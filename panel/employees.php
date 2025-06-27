@@ -22,7 +22,7 @@ $error = '';
 
 // Traitement des actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!validateCSRF($_POST['csrf_token'])) {
+    if (!validateCSRFToken($_POST['csrf_token'])) {
         $error = 'Token de sécurité invalide.';
     } else {
         $action = $_POST['action'] ?? '';
@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $first_name = trim($_POST['first_name'] ?? '');
                 $last_name = trim($_POST['last_name'] ?? '');
                 $role = $_POST['role'] ?? '';
-                $phone = trim($_POST['phone'] ?? '');
+                // Note: phone column doesn't exist in users table
                 $email = trim($_POST['email'] ?? '');
                 
                 if (empty($username) || empty($password) || empty($first_name) || empty($last_name) || empty($role)) {
@@ -53,14 +53,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         } else {
                             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
                             $stmt = $db->prepare("
-                                INSERT INTO users (username, password, first_name, last_name, role, phone, email, is_active, created_at) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+                                INSERT INTO users (username, password_hash, first_name, last_name, role, email, status, hire_date) 
+                                VALUES (?, ?, ?, ?, ?, ?, 'active', CURDATE())
                             ");
-                            $stmt->execute([$username, $hashed_password, $first_name, $last_name, $role, $phone, $email, getCurrentDateTime()]);
+                            $stmt->execute([$username, $hashed_password, $first_name, $last_name, $role, $email]);
                             $message = 'Employé ajouté avec succès !';
                         }
                     } catch (Exception $e) {
-                        $error = 'Erreur lors de l\'ajout de l\'employé.';
+                        $error = 'Erreur lors de l\'ajout de l\'employé : ' . $e->getMessage();
                     }
                 }
                 break;
@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $first_name = trim($_POST['first_name'] ?? '');
                 $last_name = trim($_POST['last_name'] ?? '');
                 $role = $_POST['role'] ?? '';
-                $phone = trim($_POST['phone'] ?? '');
+                // Note: phone column doesn't exist in users table
                 $email = trim($_POST['email'] ?? '');
                 $new_password = $_POST['new_password'] ?? '';
                 
@@ -93,17 +93,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
                                 $stmt = $db->prepare("
                                     UPDATE users 
-                                    SET username = ?, password = ?, first_name = ?, last_name = ?, role = ?, phone = ?, email = ? 
+                                    SET username = ?, password = ?, first_name = ?, last_name = ?, role = ?, email = ? 
                                     WHERE id = ?
                                 ");
-                                $stmt->execute([$username, $hashed_password, $first_name, $last_name, $role, $phone, $email, $employee_id]);
+                                $stmt->execute([$username, $hashed_password, $first_name, $last_name, $role, $email, $employee_id]);
                             } else {
                                 $stmt = $db->prepare("
                                     UPDATE users 
-                                    SET username = ?, first_name = ?, last_name = ?, role = ?, phone = ?, email = ? 
+                                    SET username = ?, first_name = ?, last_name = ?, role = ?, email = ? 
                                     WHERE id = ?
                                 ");
-                                $stmt->execute([$username, $first_name, $last_name, $role, $phone, $email, $employee_id]);
+                                $stmt->execute([$username, $first_name, $last_name, $role, $email, $employee_id]);
                             }
                             $message = 'Employé modifié avec succès !';
                         }
@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($employee_id === $user['id']) {
                         $error = 'Vous ne pouvez pas désactiver votre propre compte.';
                     } else {
-                        $stmt = $db->prepare("UPDATE users SET is_active = NOT is_active WHERE id = ?");
+                        $stmt = $db->prepare("UPDATE users SET status = CASE WHEN status = 'active' THEN 'suspended' ELSE 'active' END WHERE id = ?");
                         $stmt->execute([$employee_id]);
                         $message = 'Statut de l\'employé modifié avec succès !';
                     }
@@ -160,9 +160,9 @@ if ($role_filter) {
 }
 
 if ($status_filter === 'active') {
-    $where_conditions[] = 'is_active = 1';
+    $where_conditions[] = "status = 'active'";
 } elseif ($status_filter === 'inactive') {
-    $where_conditions[] = 'is_active = 0';
+    $where_conditions[] = "status = 'suspended'";
 }
 
 $where_clause = !empty($where_conditions) ? 'WHERE ' . implode(' AND ', $where_conditions) : '';
@@ -199,7 +199,7 @@ $employees = $stmt->fetchAll();
 $stats_query = "
     SELECT 
         COUNT(*) as total_employees,
-        SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_employees,
+        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_employees,
         SUM(CASE WHEN role = 'CDD' THEN 1 ELSE 0 END) as cdd_count,
         SUM(CASE WHEN role = 'CDI' THEN 1 ELSE 0 END) as cdi_count,
         SUM(CASE WHEN role = 'Responsable' THEN 1 ELSE 0 END) as responsable_count,
@@ -405,7 +405,7 @@ $page_title = 'Gestion des Employés';
                                     </thead>
                                     <tbody>
                                         <?php foreach ($employees as $employee): ?>
-                                            <tr class="<?php echo !$employee['is_active'] ? 'table-secondary' : ''; ?>">
+                                            <tr class="<?php echo $employee['status'] === 'suspended' ? 'table-secondary' : ''; ?>">
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <div class="avatar-circle me-2">
@@ -437,18 +437,14 @@ $page_title = 'Gestion des Employés';
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <?php if ($employee['phone']): ?>
-                                                        <div><i class="fas fa-phone me-1"></i> <?php echo htmlspecialchars($employee['phone']); ?></div>
-                                                    <?php endif; ?>
-                                                    <?php if ($employee['email']): ?>
-                                                        <div><i class="fas fa-envelope me-1"></i> <?php echo htmlspecialchars($employee['email']); ?></div>
-                                                    <?php endif; ?>
-                                                    <?php if (!$employee['phone'] && !$employee['email']): ?>
-                                                        <span class="text-muted">Aucun contact</span>
-                                                    <?php endif; ?>
-                                                </td>
+                                        <?php if ($employee['email']): ?>
+                                            <div><i class="fas fa-envelope me-1"></i> <?php echo htmlspecialchars($employee['email']); ?></div>
+                                        <?php else: ?>
+                                            <span class="text-muted">Aucun contact</span>
+                                        <?php endif; ?>
+                                    </td>
                                                 <td>
-                                                    <?php if ($employee['is_active']): ?>
+                                                    <?php if ($employee['status'] === 'active'): ?>
                                                         <span class="badge bg-success">
                                                             <i class="fas fa-check me-1"></i>
                                                             Actif
@@ -493,11 +489,11 @@ $page_title = 'Gestion des Employés';
                                                         </button>
                                                         <?php if ($employee['id'] !== $user['id']): ?>
                                                             <form method="POST" class="d-inline" onsubmit="return confirm('Confirmer le changement de statut ?')">
-                                                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                                                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                                                 <input type="hidden" name="action" value="toggle_status">
                                                                 <input type="hidden" name="employee_id" value="<?php echo $employee['id']; ?>">
-                                                                <button type="submit" class="btn btn-outline-<?php echo $employee['is_active'] ? 'danger' : 'success'; ?>">
-                                                                    <i class="fas fa-<?php echo $employee['is_active'] ? 'user-slash' : 'user-check'; ?>"></i>
+                                                                <button type="submit" class="btn btn-outline-<?php echo $employee['status'] === 'active' ? 'danger' : 'success'; ?>">
+                                                                    <i class="fas fa-<?php echo $employee['status'] === 'active' ? 'user-slash' : 'user-check'; ?>"></i>
                                                                 </button>
                                                             </form>
                                                         <?php endif; ?>
@@ -569,7 +565,7 @@ $page_title = 'Gestion des Employés';
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                         <input type="hidden" name="action" value="add_employee">
                         
                         <div class="row">
@@ -616,10 +612,7 @@ $page_title = 'Gestion des Employés';
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="add_phone" class="form-label">Téléphone</label>
-                                    <input type="tel" class="form-control" id="add_phone" name="phone">
-                                </div>
+                                <!-- Phone field removed - column doesn't exist in database -->
                             </div>
                         </div>
                         
@@ -653,7 +646,7 @@ $page_title = 'Gestion des Employés';
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                         <input type="hidden" name="action" value="edit_employee">
                         <input type="hidden" name="employee_id" id="edit_employee_id">
                         
@@ -701,10 +694,7 @@ $page_title = 'Gestion des Employés';
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="edit_phone" class="form-label">Téléphone</label>
-                                    <input type="tel" class="form-control" id="edit_phone" name="phone">
-                                </div>
+                                <!-- Phone field removed - column doesn't exist in database -->
                             </div>
                         </div>
                         
@@ -735,7 +725,7 @@ $page_title = 'Gestion des Employés';
             document.getElementById('edit_first_name').value = employee.first_name;
             document.getElementById('edit_last_name').value = employee.last_name;
             document.getElementById('edit_role').value = employee.role;
-            document.getElementById('edit_phone').value = employee.phone || '';
+            // Phone field removed - column doesn't exist in database
             document.getElementById('edit_email').value = employee.email || '';
             document.getElementById('edit_new_password').value = '';
         }
