@@ -115,12 +115,12 @@ if (!empty($search_employee)) {
 }
 
 if (!empty($filter_month)) {
-    $where_conditions[] = "MONTH(b.bonus_date) = ?";
+    $where_conditions[] = "MONTH(b.created_at) = ?";
     $params[] = $filter_month;
 }
 
 if (!empty($filter_year)) {
-    $where_conditions[] = "YEAR(b.bonus_date) = ?";
+    $where_conditions[] = "YEAR(b.created_at) = ?";
     $params[] = $filter_year;
 }
 
