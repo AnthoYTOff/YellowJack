@@ -1,10 +1,15 @@
 <?php
 /**
- * Caisse enregistreuse - Panel Employé Le Yellowjack
+ * Caisse Enregistreuse - Le Yellowjack
  * 
  * @author Développeur Web Professionnel
  * @version 1.0
  */
+
+// Activer l'affichage des erreurs pour le débogage
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
 require_once '../includes/auth.php';
 require_once '../config/database.php';
@@ -22,7 +27,7 @@ $error = '';
 
 // Traitement de la vente
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!validateCSRF($_POST['csrf_token'])) {
+    if (!validateCSRFToken($_POST['csrf_token'])) {
         $error = 'Token de sécurité invalide.';
     } else {
         $action = $_POST['action'] ?? '';
@@ -60,13 +65,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             throw new Exception("Stock insuffisant pour {$product['name']} (disponible: {$product['stock_quantity']}, demandé: $quantity)");
                         }
                         
-                        $item_total = $product['sale_price'] * $quantity;
+                        $item_total = $product['selling_price'] * $quantity;
                         $total_amount += $item_total;
                         
                         $sale_items[] = [
                             'product' => $product,
                             'quantity' => $quantity,
-                            'unit_price' => $product['sale_price'],
+                            'unit_price' => $product['selling_price'],
                             'total_price' => $item_total
                         ];
                     }
@@ -86,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Appliquer la réduction client fidèle
                     $discount_amount = 0;
                     if ($customer && $customer['is_loyal']) {
-                        $discount_amount = $total_amount * ($customer['discount_percentage'] / 100);
+                        $discount_amount = $total_amount * ($customer['loyalty_discount'] / 100);
                     }
                     
                     $final_amount = $total_amount - $discount_amount;
@@ -94,8 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // Créer la vente
                     $stmt = $db->prepare("
-                        INSERT INTO sales (user_id, customer_id, total_amount, discount_amount, final_amount, commission, sale_date) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO sales (user_id, customer_id, total_amount, discount_amount, final_amount, employee_commission) 
+                        VALUES (?, ?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([
                         $user['id'],
@@ -103,8 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $total_amount,
                         $discount_amount,
                         $final_amount,
-                        $commission,
-                        getCurrentDateTime()
+                        $commission
                     ]);
                     
                     $sale_id = $db->lastInsertId();
@@ -113,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     foreach ($sale_items as $item) {
                         // Ajouter le détail de vente
                         $stmt = $db->prepare("
-                            INSERT INTO sale_details (sale_id, product_id, quantity, unit_price, total_price) 
+                            INSERT INTO sale_items (sale_id, product_id, quantity, unit_price, total_price) 
                             VALUES (?, ?, ?, ?, ?)
                         ");
                         $stmt->execute([
@@ -269,7 +273,7 @@ $page_title = 'Caisse Enregistreuse';
                 <?php endif; ?>
                 
                 <form method="POST" id="saleForm">
-                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                     <input type="hidden" name="action" value="process_sale">
                     
                     <div class="row">
@@ -298,12 +302,12 @@ $page_title = 'Caisse Enregistreuse';
                                                                     <div class="card-body">
                                                                         <h6 class="card-title"><?php echo htmlspecialchars($product['name']); ?></h6>
                                                                         <p class="card-text">
-                                                                            <span class="text-success fw-bold"><?php echo number_format($product['sale_price'], 2); ?>$</span>
+                                                                            <span class="text-success fw-bold"><?php echo number_format($product['selling_price'], 2); ?>$</span>
                                                                             <br>
                                                                             <small class="text-muted">
                                                                                 Stock: <?php echo $product['stock_quantity']; ?>
                                                                                 <br>
-                                                                                Marge: <?php echo number_format($product['sale_price'] - $product['purchase_price'], 2); ?>$
+                                                                                Marge: <?php echo number_format($product['selling_price'] - $product['supplier_price'], 2); ?>$
                                                                             </small>
                                                                         </p>
                                                                         <div class="d-flex align-items-center">
@@ -356,10 +360,10 @@ $page_title = 'Caisse Enregistreuse';
                                         <?php foreach ($customers as $customer): ?>
                                             <option value="<?php echo $customer['id']; ?>" 
                                                     data-loyal="<?php echo $customer['is_loyal'] ? 1 : 0; ?>" 
-                                                    data-discount="<?php echo $customer['discount_percentage']; ?>">
+                                                    data-discount="<?php echo $customer['loyalty_discount']; ?>">
                                                 <?php echo htmlspecialchars($customer['name']); ?>
                                                 <?php if ($customer['is_loyal']): ?>
-                                                    <span class="badge bg-warning">Fidèle -<?php echo $customer['discount_percentage']; ?>%</span>
+                                                    <span class="badge bg-warning">Fidèle -<?php echo $customer['loyalty_discount']; ?>%</span>
                                                 <?php endif; ?>
                                             </option>
                                         <?php endforeach; ?>
@@ -464,14 +468,14 @@ $page_title = 'Caisse Enregistreuse';
                 
                 if (quantity > 0) {
                     hasItems = true;
-                    const itemTotal = quantity * parseFloat(product.sale_price);
+                    const itemTotal = quantity * parseFloat(product.selling_price);
                     subtotal += itemTotal;
                     
                     cartHTML += `
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <div>
                                 <small class="fw-bold">${product.name}</small><br>
-                                <small class="text-muted">${quantity} x ${parseFloat(product.sale_price).toFixed(2)}$</small>
+                                <small class="text-muted">${quantity} x ${parseFloat(product.selling_price).toFixed(2)}$</small>
                             </div>
                             <span class="fw-bold">${itemTotal.toFixed(2)}$</span>
                         </div>
