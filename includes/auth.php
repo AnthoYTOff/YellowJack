@@ -269,4 +269,18 @@ function generateCSRFToken() {
 function validateCSRFToken($token) {
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
+
+// Instance globale de Auth
+$auth = new Auth();
+
+// Fonctions wrapper globales
+function isLoggedIn() {
+    global $auth;
+    return $auth->isLoggedIn();
+}
+
+function logout() {
+    global $auth;
+    return $auth->logout();
+}
 ?>
