@@ -26,6 +26,9 @@ if (isset($_SESSION['success_message'])) {
     unset($_SESSION['success_message']);
 }
 
+// Test: ajouter un timestamp pour forcer le rechargement
+$last_update = time();
+
 // Traitement des actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!validateCSRF($_POST['csrf_token'])) {
@@ -286,6 +289,7 @@ $page_title = 'Gestion de l\'Inventaire';
                     <h1 class="h2">
                         <i class="fas fa-boxes me-2"></i>
                         <?php echo $page_title; ?>
+                        <small class="text-muted ms-2">(Dernière mise à jour: <?php echo date('H:i:s', $last_update); ?>)</small>
                     </h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <div class="btn-group me-2">
