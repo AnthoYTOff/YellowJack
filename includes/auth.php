@@ -51,10 +51,8 @@ class Auth {
             $user = $stmt->fetch();
             
             if ($user && password_verify($password, $user['password_hash'])) {
-                // Régénérer l'ID de session pour la sécurité (seulement si les headers ne sont pas envoyés)
-                if (!headers_sent()) {
-                    session_regenerate_id(true);
-                }
+                // Régénérer l'ID de session pour la sécurité
+                session_regenerate_id(true);
                 
                 // Stocker les informations utilisateur en session
                 $_SESSION['user_id'] = $user['id'];
