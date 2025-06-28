@@ -209,10 +209,17 @@ $login_attempts = $_SESSION['login_attempts'];
             margin-top: 1rem;
         }
         
-        .btn-login:hover {
+        .btn-login:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(139, 69, 19, 0.3);
             color: white;
+        }
+        
+        .btn-login:disabled {
+            background: #6c757d !important;
+            opacity: 0.6 !important;
+            cursor: not-allowed !important;
+            transform: none !important;
         }
         
         .btn-back {
@@ -399,39 +406,14 @@ $login_attempts = $_SESSION['login_attempts'];
                 usernameInput.focus();
             }
             
-            // Validation en temps réel
-            function validateForm() {
-                const username = usernameInput.value.trim();
-                const password = passwordInput.value;
-                
-                // Validation moins stricte : juste vérifier que les champs ne sont pas vides
-                const isValid = username.length >= 1 && password.length >= 1;
-                
-                if (submitButton) {
-                    // Ne pas désactiver le bouton si il est déjà désactivé par PHP (blocage)
-                    const isBlocked = submitButton.getAttribute('disabled') === 'disabled' || submitButton.hasAttribute('disabled');
-                    if (!isBlocked) {
-                        submitButton.disabled = !isValid;
-                        submitButton.style.opacity = isValid ? '1' : '0.6';
-                    }
-                }
-                
-                return isValid;
-            }
-            
-            // Validation lors de la saisie
+            // Nettoyer les espaces lors de la saisie du nom d'utilisateur
             if (usernameInput) {
-                usernameInput.addEventListener('input', validateForm);
                 usernameInput.addEventListener('blur', function() {
                     this.value = this.value.trim();
                 });
             }
             
-            if (passwordInput) {
-                passwordInput.addEventListener('input', validateForm);
-            }
-            
-            // Validation avant soumission
+            // Validation uniquement avant soumission
             if (form) {
                 form.addEventListener('submit', function(e) {
                     const username = usernameInput.value.trim();
@@ -454,15 +436,12 @@ $login_attempts = $_SESSION['login_attempts'];
             
             // Gestion de l'entrée pour soumettre le formulaire
             document.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter' && validateForm()) {
-                    if (form && !submitButton.disabled) {
+                if (e.key === 'Enter') {
+                    if (form && submitButton && !submitButton.disabled) {
                         form.submit();
                     }
                 }
             });
-            
-            // Validation initiale
-            validateForm();
         });
     </script>
 </body>
