@@ -404,11 +404,16 @@ $login_attempts = $_SESSION['login_attempts'];
                 const username = usernameInput.value.trim();
                 const password = passwordInput.value;
                 
-                const isValid = username.length >= 3 && password.length >= 1;
+                // Validation moins stricte : juste vérifier que les champs ne sont pas vides
+                const isValid = username.length >= 1 && password.length >= 1;
                 
-                if (submitButton && !submitButton.disabled) {
-                    submitButton.disabled = !isValid;
-                    submitButton.style.opacity = isValid ? '1' : '0.6';
+                if (submitButton) {
+                    // Ne pas désactiver le bouton si il est déjà désactivé par PHP (blocage)
+                    const isBlocked = submitButton.getAttribute('disabled') === 'disabled' || submitButton.hasAttribute('disabled');
+                    if (!isBlocked) {
+                        submitButton.disabled = !isValid;
+                        submitButton.style.opacity = isValid ? '1' : '0.6';
+                    }
                 }
                 
                 return isValid;
@@ -429,14 +434,18 @@ $login_attempts = $_SESSION['login_attempts'];
             // Validation avant soumission
             if (form) {
                 form.addEventListener('submit', function(e) {
-                    if (!validateForm()) {
+                    const username = usernameInput.value.trim();
+                    const password = passwordInput.value;
+                    
+                    // Validation simple : vérifier que les champs ne sont pas vides
+                    if (!username || !password) {
                         e.preventDefault();
-                        alert('Veuillez remplir correctement tous les champs.');
+                        alert('Veuillez remplir tous les champs.');
                         return false;
                     }
                     
                     // Désactiver le bouton pour éviter les doubles soumissions
-                    if (submitButton) {
+                    if (submitButton && !submitButton.hasAttribute('disabled')) {
                         submitButton.disabled = true;
                         submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Connexion...';
                     }
