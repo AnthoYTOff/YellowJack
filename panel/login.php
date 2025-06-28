@@ -11,6 +11,12 @@ require_once '../includes/auth.php';
 $auth = getAuth();
 $error_message = '';
 $success_message = '';
+$login_attempts = 0;
+
+// Démarrer la session si pas déjà fait
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Rediriger si déjà connecté
 if ($auth->isLoggedIn()) {
@@ -18,24 +24,77 @@ if ($auth->isLoggedIn()) {
     exit;
 }
 
+// Gestion des tentatives de connexion (protection contre le brute force)
+if (!isset($_SESSION['login_attempts'])) {
+    $_SESSION['login_attempts'] = 0;
+    $_SESSION['last_attempt'] = 0;
+}
+
+// Réinitialiser les tentatives après 15 minutes
+if (time() - $_SESSION['last_attempt'] > 900) {
+    $_SESSION['login_attempts'] = 0;
+}
+
 // Traitement du formulaire de connexion
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['login'])) {
-        $username = trim($_POST['username'] ?? '');
-        $password = $_POST['password'] ?? '';
-        
-        if (empty($username) || empty($password)) {
-            $error_message = 'Veuillez remplir tous les champs.';
-        } else {
-            if ($auth->login($username, $password)) {
-                header('Location: dashboard.php');
-                exit;
+        // Vérifier le token CSRF
+        if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
+            $error_message = 'Token de sécurité invalide. Veuillez réessayer.';
+        }
+        // Vérifier le nombre de tentatives
+        elseif ($_SESSION['login_attempts'] >= 5) {
+            $error_message = 'Trop de tentatives de connexion. Veuillez attendre 15 minutes.';
+        }
+        else {
+            $username = trim($_POST['username'] ?? '');
+            $password = $_POST['password'] ?? '';
+            
+            if (empty($username) || empty($password)) {
+                $error_message = 'Veuillez remplir tous les champs.';
+                $_SESSION['login_attempts']++;
+                $_SESSION['last_attempt'] = time();
             } else {
-                $error_message = 'Nom d\'utilisateur ou mot de passe incorrect.';
+                // Tentative de connexion avec gestion d'erreur améliorée
+                try {
+                    if ($auth->login($username, $password)) {
+                        // Réinitialiser les tentatives en cas de succès
+                        $_SESSION['login_attempts'] = 0;
+                        
+                        // Redirection sécurisée
+                        $redirect_url = $_GET['redirect'] ?? 'dashboard.php';
+                        // Valider l'URL de redirection pour éviter les attaques
+                        if (!preg_match('/^[a-zA-Z0-9_\-\/\.]+\.php$/', $redirect_url)) {
+                            $redirect_url = 'dashboard.php';
+                        }
+                        
+                        header('Location: ' . $redirect_url);
+                        exit;
+                    } else {
+                        $error_message = 'Nom d\'utilisateur ou mot de passe incorrect.';
+                        $_SESSION['login_attempts']++;
+                        $_SESSION['last_attempt'] = time();
+                        
+                        // Log des tentatives de connexion échouées
+                        error_log("Tentative de connexion échouée pour: " . $username . " depuis " . $_SERVER['REMOTE_ADDR']);
+                    }
+                } catch (Exception $e) {
+                    $error_message = 'Erreur de connexion au système. Veuillez réessayer.';
+                    error_log("Erreur de connexion: " . $e->getMessage());
+                    $_SESSION['login_attempts']++;
+                    $_SESSION['last_attempt'] = time();
+                }
             }
         }
     }
 }
+
+// Générer un token CSRF
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+$login_attempts = $_SESSION['login_attempts'];
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -240,6 +299,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="alert alert-danger" role="alert">
                 <i class="fas fa-exclamation-triangle me-2"></i>
                 <?php echo htmlspecialchars($error_message); ?>
+                <?php if ($login_attempts > 0): ?>
+                    <br><small><i class="fas fa-shield-alt me-1"></i>Tentatives: <?php echo $login_attempts; ?>/5</small>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
         
@@ -250,7 +312,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
         
-        <form method="POST" action="">
+        <?php if ($login_attempts >= 3 && $login_attempts < 5): ?>
+            <div class="alert alert-warning" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Attention: <?php echo (5 - $login_attempts); ?> tentative(s) restante(s) avant blocage temporaire.
+            </div>
+        <?php endif; ?>
+        
+        <form method="POST" action="" id="loginForm">
+            <!-- Token CSRF pour la sécurité -->
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+            
             <div class="input-group">
                 <span class="input-group-text">
                     <i class="fas fa-user"></i>
@@ -260,6 +332,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                        name="username" 
                        placeholder="Nom d'utilisateur ou email"
                        value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>"
+                       maxlength="50"
+                       autocomplete="username"
+                       <?php echo ($login_attempts >= 5) ? 'disabled' : ''; ?>
                        required>
             </div>
             
@@ -271,13 +346,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                        class="form-control" 
                        name="password" 
                        placeholder="Mot de passe"
+                       maxlength="255"
+                       autocomplete="current-password"
+                       <?php echo ($login_attempts >= 5) ? 'disabled' : ''; ?>
                        required>
             </div>
             
-            <button type="submit" name="login" class="btn btn-login">
+            <button type="submit" 
+                    name="login" 
+                    class="btn btn-login"
+                    <?php echo ($login_attempts >= 5) ? 'disabled' : ''; ?>>
                 <i class="fas fa-sign-in-alt me-2"></i>
-                Se Connecter
+                <?php echo ($login_attempts >= 5) ? 'Compte temporairement bloqué' : 'Se Connecter'; ?>
             </button>
+            
+            <?php if ($login_attempts >= 5): ?>
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Réessayez dans 15 minutes
+                    </small>
+                </div>
+            <?php endif; ?>
         </form>
         
         <div class="footer-link">
@@ -298,22 +388,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Auto-focus sur le premier champ
         document.addEventListener('DOMContentLoaded', function() {
-            const firstInput = document.querySelector('input[name="username"]');
-            if (firstInput) {
-                firstInput.focus();
+            const form = document.getElementById('loginForm');
+            const usernameInput = document.querySelector('input[name="username"]');
+            const passwordInput = document.querySelector('input[name="password"]');
+            const submitButton = document.querySelector('button[name="login"]');
+            
+            // Auto-focus sur le premier champ si pas désactivé
+            if (usernameInput && !usernameInput.disabled) {
+                usernameInput.focus();
             }
-        });
-        
-        // Gestion de l'entrée pour soumettre le formulaire
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const form = document.querySelector('form');
-                if (form) {
-                    form.submit();
+            
+            // Validation en temps réel
+            function validateForm() {
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value;
+                
+                const isValid = username.length >= 3 && password.length >= 1;
+                
+                if (submitButton && !submitButton.disabled) {
+                    submitButton.disabled = !isValid;
+                    submitButton.style.opacity = isValid ? '1' : '0.6';
                 }
+                
+                return isValid;
             }
+            
+            // Validation lors de la saisie
+            if (usernameInput) {
+                usernameInput.addEventListener('input', validateForm);
+                usernameInput.addEventListener('blur', function() {
+                    this.value = this.value.trim();
+                });
+            }
+            
+            if (passwordInput) {
+                passwordInput.addEventListener('input', validateForm);
+            }
+            
+            // Validation avant soumission
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    if (!validateForm()) {
+                        e.preventDefault();
+                        alert('Veuillez remplir correctement tous les champs.');
+                        return false;
+                    }
+                    
+                    // Désactiver le bouton pour éviter les doubles soumissions
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Connexion...';
+                    }
+                });
+            }
+            
+            // Gestion de l'entrée pour soumettre le formulaire
+            document.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && validateForm()) {
+                    if (form && !submitButton.disabled) {
+                        form.submit();
+                    }
+                }
+            });
+            
+            // Validation initiale
+            validateForm();
         });
     </script>
 </body>
