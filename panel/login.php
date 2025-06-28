@@ -48,8 +48,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         else {
             // Nettoyer et normaliser les données reçues
-            $username = trim(preg_replace('/[\x00-\x1F\x7F]/', '', $_POST['username'] ?? ''));
-            $password = preg_replace('/[\x00-\x1F\x7F]/', '', $_POST['password'] ?? '');
+            $username = trim($_POST['username'] ?? '');
+            $password = trim($_POST['password'] ?? '');
+            
+            // Supprimer les caractères invisibles
+            $username = preg_replace('/[\x00-\x1F\x7F\xA0]/u', '', $username);
+            $password = preg_replace('/[\x00-\x1F\x7F\xA0]/u', '', $password);
             
             if (empty($username) || empty($password)) {
                 $error_message = 'Veuillez remplir tous les champs.';
