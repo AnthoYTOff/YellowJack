@@ -47,8 +47,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error_message = 'Trop de tentatives de connexion. Veuillez attendre 15 minutes.';
         }
         else {
-            $username = trim($_POST['username'] ?? '');
-            $password = $_POST['password'] ?? '';
+            // Nettoyer et normaliser les données reçues
+            $username = trim(preg_replace('/[\x00-\x1F\x7F]/', '', $_POST['username'] ?? ''));
+            $password = preg_replace('/[\x00-\x1F\x7F]/', '', $_POST['password'] ?? '');
             
             if (empty($username) || empty($password)) {
                 $error_message = 'Veuillez remplir tous les champs.';
@@ -78,9 +79,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Log des tentatives de connexion échouées
                         error_log("Tentative de connexion échouée pour: " . $username . " depuis " . $_SERVER['REMOTE_ADDR']);
                     }
+                } catch (PDOException $e) {
+                    if (APP_DEBUG) {
+                        $error_message = 'Erreur de connexion à la base de données : ' . $e->getMessage();
+                    } else {
+                        $error_message = 'Erreur de connexion à la base de données.';
+                    }
+                    error_log("Erreur PDO: " . $e->getMessage());
+                    $_SESSION['login_attempts']++;
+                    $_SESSION['last_attempt'] = time();
                 } catch (Exception $e) {
-                    $error_message = 'Erreur de connexion au système. Veuillez réessayer.';
-                    error_log("Erreur de connexion: " . $e->getMessage());
+                    if (APP_DEBUG) {
+                        $error_message = 'Erreur système : ' . $e->getMessage();
+                    } else {
+                        $error_message = 'Erreur de connexion au système. Veuillez réessayer.';
+                    }
+                    error_log("Erreur générale: " . $e->getMessage());
                     $_SESSION['login_attempts']++;
                     $_SESSION['last_attempt'] = time();
                 }
@@ -406,18 +420,35 @@ $login_attempts = $_SESSION['login_attempts'];
                 usernameInput.focus();
             }
             
-            // Nettoyer les espaces lors de la saisie du nom d'utilisateur
+            // Nettoyer les données lors de la saisie
             if (usernameInput) {
+                usernameInput.addEventListener('input', function() {
+                    // Supprimer les caractères invisibles et normaliser
+                    this.value = this.value.replace(/[\x00-\x1F\x7F]/g, '').trim();
+                });
+                
                 usernameInput.addEventListener('blur', function() {
                     this.value = this.value.trim();
                 });
             }
             
-            // Validation uniquement avant soumission
+            if (passwordInput) {
+                passwordInput.addEventListener('input', function() {
+                    // Supprimer les caractères invisibles du mot de passe
+                    this.value = this.value.replace(/[\x00-\x1F\x7F]/g, '');
+                });
+            }
+            
+            // Validation et nettoyage avant soumission
             if (form) {
                 form.addEventListener('submit', function(e) {
-                    const username = usernameInput.value.trim();
-                    const password = passwordInput.value;
+                    // Nettoyer les valeurs avant validation
+                    const username = usernameInput.value.replace(/[\x00-\x1F\x7F]/g, '').trim();
+                    const password = passwordInput.value.replace(/[\x00-\x1F\x7F]/g, '');
+                    
+                    // Mettre à jour les champs avec les valeurs nettoyées
+                    usernameInput.value = username;
+                    passwordInput.value = password;
                     
                     // Validation simple : vérifier que les champs ne sont pas vides
                     if (!username || !password) {
