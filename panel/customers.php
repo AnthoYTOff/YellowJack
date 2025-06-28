@@ -34,6 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $email = trim($_POST['email'] ?? '');
                 $is_loyal = isset($_POST['is_loyal']) ? 1 : 0;
                 $loyalty_discount = floatval($_POST['loyalty_discount'] ?? 0);
+                $customer_type = 'Client';
+                $company_id = !empty($_POST['company_id']) ? intval($_POST['company_id']) : null;
                 
                 if (empty($name)) {
                     $error = 'Le nom du client est obligatoire.';
@@ -46,10 +48,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $error = 'Un client avec ce nom existe déjà.';
                         } else {
                             $stmt = $db->prepare("
-                                INSERT INTO customers (name, phone, email, is_loyal, loyalty_discount, created_at) 
-                                VALUES (?, ?, ?, ?, ?, ?)
+                                INSERT INTO customers (name, phone, email, is_loyal, loyalty_discount, customer_type, company_id, created_at) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                             ");
-                            $stmt->execute([$name, $phone, $email, $is_loyal, $loyalty_discount, getCurrentDateTime()]);
+                            $stmt->execute([$name, $phone, $email, $is_loyal, $loyalty_discount, $customer_type, $company_id, getCurrentDateTime()]);
                             $message = 'Client ajouté avec succès !';
                         }
                     } catch (Exception $e) {
@@ -65,6 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $email = trim($_POST['email'] ?? '');
                 $is_loyal = isset($_POST['is_loyal']) ? 1 : 0;
                 $loyalty_discount = floatval($_POST['loyalty_discount'] ?? 0);
+                $customer_type = 'Client';
+                $company_id = !empty($_POST['company_id']) ? intval($_POST['company_id']) : null;
                 
                 if (empty($name)) {
                     $error = 'Le nom du client est obligatoire.';
@@ -78,10 +82,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         } else {
                             $stmt = $db->prepare("
                                 UPDATE customers 
-                                SET name = ?, phone = ?, email = ?, is_loyal = ?, loyalty_discount = ? 
+                                SET name = ?, phone = ?, email = ?, is_loyal = ?, loyalty_discount = ?, customer_type = ?, company_id = ? 
                                 WHERE id = ?
                             ");
-                            $stmt->execute([$name, $phone, $email, $is_loyal, $loyalty_discount, $customer_id]);
+                            $stmt->execute([$name, $phone, $email, $is_loyal, $loyalty_discount, $customer_type, $company_id, $customer_id]);
                             $message = 'Client modifié avec succès !';
                         }
                     } catch (Exception $e) {
@@ -111,6 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Paramètres de recherche et pagination
 $search = trim($_GET['search'] ?? '');
 $loyalty_filter = $_GET['loyalty'] ?? '';
+$type_filter = $_GET['type'] ?? '';
 $page = max(1, intval($_GET['page'] ?? 1));
 $limit = 20;
 $offset = ($page - 1) * $limit;
@@ -120,23 +125,28 @@ $where_conditions = [];
 $params = [];
 
 if ($search) {
-    $where_conditions[] = '(name LIKE ? OR phone LIKE ? OR email LIKE ?)';
+    $where_conditions[] = '(c.name LIKE ? OR c.phone LIKE ? OR c.email LIKE ? OR comp.name LIKE ?)';
     $search_param = "%$search%";
+    $params[] = $search_param;
     $params[] = $search_param;
     $params[] = $search_param;
     $params[] = $search_param;
 }
 
 if ($loyalty_filter === 'loyal') {
-    $where_conditions[] = 'is_loyal = 1';
+    $where_conditions[] = 'c.is_loyal = 1';
 } elseif ($loyalty_filter === 'regular') {
-    $where_conditions[] = 'is_loyal = 0';
+    $where_conditions[] = 'c.is_loyal = 0';
+}
+
+if ($type_filter === 'Client') {
+    $where_conditions[] = 'c.customer_type = "Client"';
 }
 
 $where_clause = !empty($where_conditions) ? 'WHERE ' . implode(' AND ', $where_conditions) : '';
 
 // Compter le total
-$count_query = "SELECT COUNT(*) FROM customers $where_clause";
+$count_query = "SELECT COUNT(*) FROM customers c LEFT JOIN companies comp ON c.company_id = comp.id $where_clause";
 $stmt = $db->prepare($count_query);
 $stmt->execute($params);
 $total_records = $stmt->fetchColumn();
@@ -146,9 +156,12 @@ $total_pages = ceil($total_records / $limit);
 $query = "
     SELECT 
         c.*,
+        comp.name as company_name,
+        comp.business_discount,
         COUNT(s.id) as total_purchases,
         COALESCE(SUM(s.final_amount), 0) as total_spent
     FROM customers c
+    LEFT JOIN companies comp ON c.company_id = comp.id
     LEFT JOIN sales s ON c.id = s.customer_id
     $where_clause
     GROUP BY c.id
@@ -159,11 +172,19 @@ $stmt = $db->prepare($query);
 $stmt->execute($params);
 $customers = $stmt->fetchAll();
 
+// Récupérer la liste des entreprises pour les formulaires
+$companies_query = "SELECT id, name, business_discount FROM companies WHERE is_active = 1 ORDER BY name";
+$stmt = $db->prepare($companies_query);
+$stmt->execute();
+$companies = $stmt->fetchAll();
+
 // Statistiques globales
 $stats_query = "
     SELECT 
         COUNT(*) as total_customers,
         SUM(CASE WHEN is_loyal = 1 THEN 1 ELSE 0 END) as loyal_customers,
+        SUM(CASE WHEN customer_type = 'Client' THEN 1 ELSE 0 END) as individual_customers,
+        SUM(CASE WHEN company_id IS NOT NULL THEN 1 ELSE 0 END) as business_customers,
         AVG(loyalty_discount) as avg_discount
     FROM customers
 ";
@@ -234,7 +255,7 @@ $page_title = 'Gestion des Clients';
                 
                 <!-- Statistiques -->
                 <div class="row mb-4">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="card text-center">
                             <div class="card-body">
                                 <i class="fas fa-users fa-2x text-primary mb-2"></i>
@@ -243,21 +264,30 @@ $page_title = 'Gestion des Clients';
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-user fa-2x text-info mb-2"></i>
+                                <h5 class="card-title"><?php echo number_format($stats['individual_customers']); ?></h5>
+                                <p class="card-text text-muted">Clients particuliers</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-building fa-2x text-success mb-2"></i>
+                                <h5 class="card-title"><?php echo number_format($stats['business_customers']); ?></h5>
+                                <p class="card-text text-muted">Clients entreprises</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
                         <div class="card text-center">
                             <div class="card-body">
                                 <i class="fas fa-star fa-2x text-warning mb-2"></i>
                                 <h5 class="card-title"><?php echo number_format($stats['loyal_customers']); ?></h5>
                                 <p class="card-text text-muted">Clients fidèles</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-percentage fa-2x text-success mb-2"></i>
-                                <h5 class="card-title"><?php echo number_format($stats['avg_discount'], 1); ?>%</h5>
-                                <p class="card-text text-muted">Réduction moyenne</p>
                             </div>
                         </div>
                     </div>
@@ -267,13 +297,20 @@ $page_title = 'Gestion des Clients';
                 <div class="card mb-4">
                     <div class="card-body">
                         <form method="GET" class="row g-3">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label for="search" class="form-label">Rechercher</label>
                                 <input type="text" class="form-control" id="search" name="search" 
-                                       placeholder="Nom, téléphone ou email..." 
+                                       placeholder="Nom, téléphone, email ou entreprise..." 
                                        value="<?php echo htmlspecialchars($search); ?>">
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <label for="type" class="form-label">Type de client</label>
+                                <select class="form-select" id="type" name="type">
+                                    <option value="">Tous les types</option>
+                                    <option value="Client" <?php echo $type_filter === 'Client' ? 'selected' : ''; ?>>Clients particuliers</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
                                 <label for="loyalty" class="form-label">Fidélité</label>
                                 <select class="form-select" id="loyalty" name="loyalty">
                                     <option value="">Tous les clients</option>
@@ -316,7 +353,9 @@ $page_title = 'Gestion des Clients';
                                     <thead>
                                         <tr>
                                             <th>Nom</th>
+                                            <th>Type</th>
                                             <th>Contact</th>
+                                            <th>Entreprise</th>
                                             <th>Statut</th>
                                             <th>Réduction</th>
                                             <th>Achats</th>
@@ -332,6 +371,12 @@ $page_title = 'Gestion des Clients';
                                                     <strong><?php echo htmlspecialchars($customer['name']); ?></strong>
                                                 </td>
                                                 <td>
+                                                    <span class="badge bg-info">
+                                                        <i class="fas fa-user me-1"></i>
+                                                        Client
+                                                    </span>
+                                                </td>
+                                                <td>
                                                     <?php if ($customer['phone']): ?>
                                                         <div><i class="fas fa-phone me-1"></i> <?php echo htmlspecialchars($customer['phone']); ?></div>
                                                     <?php endif; ?>
@@ -340,6 +385,19 @@ $page_title = 'Gestion des Clients';
                                                     <?php endif; ?>
                                                     <?php if (!$customer['phone'] && !$customer['email']): ?>
                                                         <span class="text-muted">Aucun contact</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php if ($customer['company_name']): ?>
+                                                        <span class="text-primary fw-bold">
+                                                            <i class="fas fa-building me-1"></i>
+                                                            <?php echo htmlspecialchars($customer['company_name']); ?>
+                                                        </span>
+                                                        <?php if ($customer['business_discount'] > 0): ?>
+                                                            <br><small class="text-success">Réduction: <?php echo $customer['business_discount']; ?>%</small>
+                                                        <?php endif; ?>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">-</span>
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
@@ -353,8 +411,20 @@ $page_title = 'Gestion des Clients';
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <?php if ($customer['is_loyal'] && $customer['loyalty_discount'] > 0): ?>
-                                                        <span class="text-success fw-bold"><?php echo $customer['loyalty_discount']; ?>%</span>
+                                                    <?php 
+                                                    $total_discount = 0;
+                                                    if ($customer['is_loyal'] && $customer['loyalty_discount'] > 0) {
+                                                        $total_discount += $customer['loyalty_discount'];
+                                                    }
+                                                    if ($customer['business_discount'] > 0) {
+                                                        $total_discount += $customer['business_discount'];
+                                                    }
+                                                    ?>
+                                                    <?php if ($total_discount > 0): ?>
+                                                        <span class="text-success fw-bold"><?php echo number_format($total_discount, 1); ?>%</span>
+                                                        <?php if ($customer['loyalty_discount'] > 0 && $customer['business_discount'] > 0): ?>
+                                                            <br><small class="text-muted">(Fidélité + Entreprise)</small>
+                                                        <?php endif; ?>
                                                     <?php else: ?>
                                                         <span class="text-muted">-</span>
                                                     <?php endif; ?>
@@ -371,11 +441,11 @@ $page_title = 'Gestion des Clients';
                                                 <td>
                                                     <div class="btn-group btn-group-sm">
                                                         <button type="button" class="btn btn-outline-primary" 
-                                                                onclick="editCustomer(<?php echo htmlspecialchars(json_encode($customer)); ?>)" 
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#editCustomerModal">
-                                                            <i class="fas fa-edit"></i>
-                                                        </button>
+                                                onclick="editCustomer(<?php echo htmlspecialchars(json_encode($customer)); ?>)" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#editCustomerModal">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
                                                         <?php if ($auth->canManageEmployees()): ?>
                                                             <form method="POST" class="d-inline" onsubmit="return confirm('Confirmer le changement de statut ?')">
                                                                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
@@ -462,29 +532,55 @@ $page_title = 'Gestion des Clients';
                             <input type="text" class="form-control" id="add_name" name="name" required>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="add_phone" class="form-label">Téléphone</label>
-                            <input type="tel" class="form-control" id="add_phone" name="phone">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="add_email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="add_email" name="email">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="add_is_loyal" name="is_loyal">
-                                <label class="form-check-label" for="add_is_loyal">
-                                    Client fidèle
-                                </label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="add_phone" class="form-label">Téléphone</label>
+                                    <input type="tel" class="form-control" id="add_phone" name="phone">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="add_email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="add_email" name="email">
+                                </div>
                             </div>
                         </div>
                         
                         <div class="mb-3">
-                            <label for="add_loyalty_discount" class="form-label">Pourcentage de réduction (%)</label>
-                            <input type="number" class="form-control" id="add_loyalty_discount" name="loyalty_discount" 
-                                   min="0" max="100" step="0.1" value="0">
+                            <label for="add_company_id" class="form-label">Entreprise associée (optionnel)</label>
+                            <select class="form-select" id="add_company_id" name="company_id">
+                                <option value="">Aucune entreprise</option>
+                                <?php foreach ($companies as $company): ?>
+                                    <option value="<?php echo $company['id']; ?>">
+                                        <?php echo htmlspecialchars($company['name']); ?>
+                                        <?php if ($company['business_discount'] > 0): ?>
+                                            (<?php echo $company['business_discount']; ?>% de réduction)
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="form-text">Associer ce client à une entreprise pour appliquer automatiquement la réduction entreprise.</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="add_is_loyal" name="is_loyal">
+                                        <label class="form-check-label" for="add_is_loyal">
+                                            Client fidèle
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="add_loyalty_discount" class="form-label">Réduction fidélité (%)</label>
+                                    <input type="number" class="form-control" id="add_loyalty_discount" name="loyalty_discount" 
+                                           min="0" max="100" step="0.1" value="0">
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -521,29 +617,55 @@ $page_title = 'Gestion des Clients';
                             <input type="text" class="form-control" id="edit_name" name="name" required>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="edit_phone" class="form-label">Téléphone</label>
-                            <input type="tel" class="form-control" id="edit_phone" name="phone">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="edit_email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="edit_email" name="email">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="edit_is_loyal" name="is_loyal">
-                                <label class="form-check-label" for="edit_is_loyal">
-                                    Client fidèle
-                                </label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_phone" class="form-label">Téléphone</label>
+                                    <input type="tel" class="form-control" id="edit_phone" name="phone">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="edit_email" name="email">
+                                </div>
                             </div>
                         </div>
                         
                         <div class="mb-3">
-                            <label for="edit_loyalty_discount" class="form-label">Pourcentage de réduction (%)</label>
-                            <input type="number" class="form-control" id="edit_loyalty_discount" name="loyalty_discount" 
-                                   min="0" max="100" step="0.1">
+                            <label for="edit_company_id" class="form-label">Entreprise associée (optionnel)</label>
+                            <select class="form-select" id="edit_company_id" name="company_id">
+                                <option value="">Aucune entreprise</option>
+                                <?php foreach ($companies as $company): ?>
+                                    <option value="<?php echo $company['id']; ?>">
+                                        <?php echo htmlspecialchars($company['name']); ?>
+                                        <?php if ($company['business_discount'] > 0): ?>
+                                            (<?php echo $company['business_discount']; ?>% de réduction)
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="form-text">Associer ce client à une entreprise pour appliquer automatiquement la réduction entreprise.</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="edit_is_loyal" name="is_loyal">
+                                        <label class="form-check-label" for="edit_is_loyal">
+                                            Client fidèle
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_loyalty_discount" class="form-label">Réduction fidélité (%)</label>
+                                    <input type="number" class="form-control" id="edit_loyalty_discount" name="loyalty_discount" 
+                                           min="0" max="100" step="0.1">
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -568,7 +690,10 @@ $page_title = 'Gestion des Clients';
             document.getElementById('edit_phone').value = customer.phone || '';
             document.getElementById('edit_email').value = customer.email || '';
             document.getElementById('edit_is_loyal').checked = customer.is_loyal == 1;
-            document.getElementById('edit_loyalty_discount').value = customer.loyalty_discount;
+            document.getElementById('edit_loyalty_discount').value = customer.loyalty_discount || 0;
+            document.getElementById('edit_company_id').value = customer.company_id || '';
+            
+            new bootstrap.Modal(document.getElementById('editCustomerModal')).show();
         }
     </script>
 </body>

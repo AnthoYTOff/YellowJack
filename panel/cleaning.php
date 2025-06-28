@@ -16,11 +16,26 @@ $auth = getAuth();
 $user = $auth->getCurrentUser();
 $db = getDB();
 
+// Récupérer le taux de ménage depuis les paramètres
+$stmt = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'cleaning_rate'");
+$stmt->execute();
+$cleaning_rate_setting = $stmt->fetchColumn();
+if (!defined('CLEANING_RATE')) {
+    define('CLEANING_RATE', floatval($cleaning_rate_setting ?: 60));
+}
+
+// Les fonctions getCurrentDateTime() et calculateDuration() sont maintenant définies dans config/database.php
+
 $message = '';
 $error = '';
 
+// Gérer les messages de redirection
+if (isset($_GET['success']) && $_GET['success'] == '1' && isset($_GET['message'])) {
+    $message = urldecode($_GET['message']);
+}
+
 // Vérifier s'il y a un service en cours
-$stmt = $db->prepare("SELECT * FROM cleaning_services WHERE user_id = ? AND end_time IS NULL ORDER BY start_time DESC LIMIT 1");
+$stmt = $db->prepare("SELECT * FROM cleaning_services WHERE user_id = ? AND status = 'in_progress' ORDER BY start_time DESC LIMIT 1");
 $stmt->execute([$user['id']]);
 $current_session = $stmt->fetch();
 
@@ -39,10 +54,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $stmt->execute([$user['id'], getCurrentDateTime()]);
                         $message = 'Service démarré avec succès !';
                         
-                        // Recharger la session courante
-                        $stmt = $db->prepare("SELECT * FROM cleaning_services WHERE user_id = ? AND end_time IS NULL ORDER BY start_time DESC LIMIT 1");
-                        $stmt->execute([$user['id']]);
-                        $current_session = $stmt->fetch();
+                        // Rediriger pour éviter la resoumission du formulaire et forcer la mise à jour de l'affichage
+                        header('Location: cleaning.php?success=1&message=' . urlencode($message));
+                        exit;
                     } catch (Exception $e) {
                         $error = 'Erreur lors du démarrage du service.';
                     }
@@ -66,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                             $stmt = $db->prepare("
                                 UPDATE cleaning_services 
-                                SET end_time = ?, cleaning_count = ?, duration_minutes = ?, total_salary = ? 
+                                SET end_time = ?, cleaning_count = ?, duration_minutes = ?, total_salary = ?, status = 'completed' 
                                 WHERE id = ?
                             ");
                             $stmt->execute([
@@ -79,6 +93,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                             $message = "Service terminé ! Durée: {$duration} minutes, Ménages: {$cleaning_count}, Salaire: {$salary}$";
                             $current_session = null;
+                            
+                            // Rediriger pour éviter la resoumission du formulaire et forcer la mise à jour de l'affichage
+                            header('Location: cleaning.php?success=1&message=' . urlencode($message));
+                            exit;
                         } catch (Exception $e) {
                             $error = 'Erreur lors de la fin du service.';
                         }
