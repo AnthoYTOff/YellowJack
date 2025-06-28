@@ -132,13 +132,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     Mes Statistiques
                 </a>
             </li>
-            <?php if ($auth->canManageEmployees()): ?>
+            <?php if ($auth->canAccessCashRegister()): ?>
             <li class="nav-item">
                 <a class="nav-link <?php echo $current_page === 'rankings.php' ? 'active' : ''; ?>" href="rankings.php">
                     <i class="fas fa-trophy"></i>
                     Classements
                 </a>
             </li>
+            <?php endif; ?>
+            <?php if ($auth->canManageEmployees()): ?>
             <li class="nav-item">
                 <a class="nav-link <?php echo $current_page === 'analytics.php' ? 'active' : ''; ?>" href="analytics.php">
                     <i class="fas fa-chart-pie"></i>
