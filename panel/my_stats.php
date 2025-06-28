@@ -14,6 +14,33 @@ $auth = getAuth();
 $user = $auth->getCurrentUser();
 $db = getDB();
 
+// Traitement de la mise à jour des objectifs
+if ($_POST && isset($_POST['update_goals'])) {
+    try {
+        $goals_to_update = [
+            'menages_mensuel' => floatval($_POST['menages_mensuel'] ?? 0),
+            'salaire_mensuel' => floatval($_POST['salaire_mensuel'] ?? 0),
+            'ventes_mensuelles' => floatval($_POST['ventes_mensuelles'] ?? 0),
+            'commissions_mensuelles' => floatval($_POST['commissions_mensuelles'] ?? 0)
+        ];
+        
+        foreach ($goals_to_update as $goal_type => $target_value) {
+            if ($target_value > 0) {
+                $stmt = $db->prepare("
+                    INSERT INTO user_goals (user_id, goal_type, target_value) 
+                    VALUES (?, ?, ?) 
+                    ON DUPLICATE KEY UPDATE target_value = VALUES(target_value), updated_at = CURRENT_TIMESTAMP
+                ");
+                $stmt->execute([$user['id'], $goal_type, $target_value]);
+            }
+        }
+        
+        $success_message = "Objectifs mis à jour avec succès !";
+    } catch (Exception $e) {
+        $error_message = "Erreur lors de la mise à jour des objectifs : " . $e->getMessage();
+    }
+}
+
 // Période par défaut (ce mois)
 $period = $_GET['period'] ?? 'month';
 $start_date = '';
@@ -172,13 +199,40 @@ try {
     }
 }
 
-// Objectifs personnels (exemple)
-$objectifs = [
-    'menages_mensuel' => 100,
-    'salaire_mensuel' => 2000,
-    'ventes_mensuelles' => 50,
-    'commissions_mensuelles' => 500
-];
+// Récupération des objectifs personnels de l'utilisateur
+$objectifs = [];
+try {
+    $stmt = $db->prepare("SELECT goal_type, target_value FROM user_goals WHERE user_id = ?");
+    $stmt->execute([$user['id']]);
+    $user_goals = $stmt->fetchAll();
+    
+    // Convertir en tableau associatif
+    foreach ($user_goals as $goal) {
+        $objectifs[$goal['goal_type']] = $goal['target_value'];
+    }
+    
+    // Valeurs par défaut si aucun objectif défini
+    $default_goals = [
+        'menages_mensuel' => 100,
+        'salaire_mensuel' => 2000,
+        'ventes_mensuelles' => 50,
+        'commissions_mensuelles' => 500
+    ];
+    
+    foreach ($default_goals as $goal_type => $default_value) {
+        if (!isset($objectifs[$goal_type])) {
+            $objectifs[$goal_type] = $default_value;
+        }
+    }
+} catch (Exception $e) {
+    // En cas d'erreur, utiliser les valeurs par défaut
+    $objectifs = [
+        'menages_mensuel' => 100,
+        'salaire_mensuel' => 2000,
+        'ventes_mensuelles' => 50,
+        'commissions_mensuelles' => 500
+    ];
+}
 
 // Calcul des pourcentages d'objectifs
 $progress = [];
@@ -224,6 +278,22 @@ $page_title = "Mes Statistiques";
                         <?php echo $page_title; ?>
                     </h1>
                 </div>
+                
+                <?php if (isset($success_message)): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <?php echo htmlspecialchars($success_message); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if (isset($error_message)): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <?php echo htmlspecialchars($error_message); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <?php endif; ?>
                 
                 <!-- Filtres de période -->
                 <div class="card mb-4">
@@ -371,11 +441,15 @@ $page_title = "Mes Statistiques";
                 <!-- Objectifs mensuels -->
                 <?php if ($period === 'month'): ?>
                 <div class="card mb-4">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="fas fa-target me-2"></i>
                             Progression vers les objectifs mensuels
                         </h5>
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#goalsModal">
+                            <i class="fas fa-edit me-1"></i>
+                            Modifier les objectifs
+                        </button>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -618,5 +692,75 @@ $page_title = "Mes Statistiques";
         }
     });
     </script>
+    
+    <!-- Modal de gestion des objectifs -->
+    <div class="modal fade" id="goalsModal" tabindex="-1" aria-labelledby="goalsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="goalsModalLabel">
+                        <i class="fas fa-target me-2"></i>
+                        Gestion des objectifs mensuels
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-broom me-2"></i>
+                                    Objectifs Ménage
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="menages_mensuel" class="form-label">Nombre de ménages par mois</label>
+                                    <input type="number" class="form-control" id="menages_mensuel" name="menages_mensuel" 
+                                           value="<?php echo $objectifs['menages_mensuel']; ?>" min="0" step="1">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="salaire_mensuel" class="form-label">Salaire ménage mensuel ($)</label>
+                                    <input type="number" class="form-control" id="salaire_mensuel" name="salaire_mensuel" 
+                                           value="<?php echo $objectifs['salaire_mensuel']; ?>" min="0" step="0.01">
+                                </div>
+                            </div>
+                            <?php if ($auth->canAccessCashRegister()): ?>
+                            <div class="col-md-6">
+                                <h6 class="text-warning mb-3">
+                                    <i class="fas fa-shopping-cart me-2"></i>
+                                    Objectifs Vente
+                                </h6>
+                                <div class="mb-3">
+                                    <label for="ventes_mensuelles" class="form-label">Nombre de ventes par mois</label>
+                                    <input type="number" class="form-control" id="ventes_mensuelles" name="ventes_mensuelles" 
+                                           value="<?php echo $objectifs['ventes_mensuelles']; ?>" min="0" step="1">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="commissions_mensuelles" class="form-label">Commissions mensuelles ($)</label>
+                                    <input type="number" class="form-control" id="commissions_mensuelles" name="commissions_mensuelles" 
+                                           value="<?php echo $objectifs['commissions_mensuelles']; ?>" min="0" step="0.01">
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Conseil :</strong> Définissez des objectifs réalistes et motivants. Vous pourrez les ajuster à tout moment.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>
+                            Annuler
+                        </button>
+                        <button type="submit" name="update_goals" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>
+                            Enregistrer les objectifs
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
 </body>
 </html>
