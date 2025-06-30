@@ -245,18 +245,43 @@ foreach ($performances as $perf) {
     <link rel="stylesheet" href="../assets/css/panel.css">
     
     <style>
+        :root {
+            --primary-color: #8B4513; /* Brun western */
+            --secondary-color: #DAA520; /* Or/Jaune */
+            --accent-color: #CD853F; /* Beige sable */
+            --dark-color: #2F1B14; /* Brun foncé */
+            --light-color: #ffffff;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+            --transition: all 0.3s ease;
+        }
+        
         .navbar {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
-            border-bottom: 3px solid #f39c12;
+            background: linear-gradient(135deg, var(--dark-color), var(--primary-color)) !important;
+            box-shadow: var(--shadow);
+            padding: 0.75rem 0;
+            border-bottom: 3px solid var(--secondary-color);
         }
         
         .navbar-brand {
-            color: #fff !important;
-            font-weight: bold;
+            font-family: 'Rye', cursive;
+            font-size: 1.5rem;
+            color: var(--secondary-color) !important;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            font-weight: 400;
         }
         
         .navbar-nav .nav-link {
-            color: #fff !important;
+            color: var(--light-color) !important;
+            font-weight: 500;
+            transition: var(--transition);
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+        }
+        
+        .navbar-nav .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--secondary-color) !important;
         }
         
         .sidebar {
