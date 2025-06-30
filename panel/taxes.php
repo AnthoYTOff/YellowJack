@@ -144,7 +144,7 @@ if ($_POST && isset($_POST['calculate_taxes'])) {
             json_encode($tax_calculation['breakdown'])
         ]);
         
-        $success_message = "Impôts calculés avec succès pour la semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime('-1 day', strtotime($week_end)));
+        $success_message = "Impôts calculés avec succès pour la semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " (exclu)";
         
     } catch (Exception $e) {
         $error_message = "Erreur lors du calcul des impôts : " . $e->getMessage();
@@ -397,7 +397,7 @@ try {
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <span class="badge bg-warning text-dark fs-6">
                             <i class="fas fa-calendar-week me-1"></i>
-                            Semaine du <?php echo date('d/m/Y', strtotime($week_start)); ?> au <?php echo date('d/m/Y', strtotime('-1 day', strtotime($week_end))); ?>
+                            Semaine du <?php echo date('d/m/Y', strtotime($week_start)); ?> au <?php echo date('d/m/Y', strtotime($week_end)); ?> (exclu)
                         </span>
                     </div>
                 </div>
@@ -433,7 +433,7 @@ try {
                                     <select name="week" class="form-select">
                                         <?php foreach ($available_weeks as $week): ?>
                                             <option value="<?php echo $week; ?>" <?php echo ($week == $selected_week) ? 'selected' : ''; ?>>
-                                            Semaine du <?php echo date('d/m/Y', strtotime($week)); ?> au <?php echo date('d/m/Y', strtotime('-1 day', strtotime(getFridayAfterFriday($week)))); ?>
+                                            Semaine du <?php echo date('d/m/Y', strtotime($week)); ?> au <?php echo date('d/m/Y', strtotime(getFridayAfterFriday($week))); ?> (exclu)
                                         </option>
                                         <?php endforeach; ?>
                                     </select>

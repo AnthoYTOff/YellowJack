@@ -410,8 +410,8 @@ foreach ($performances as $perf) {
                                 <?php foreach ($available_weeks as $week): ?>
                                     <option value="<?php echo $week; ?>" <?php echo $week === $selected_week ? 'selected' : ''; ?>>
                                         <?php 
-                                        $week_end_display = date('Y-m-d', strtotime('-1 day', strtotime(getFridayAfterFriday($week))));
-                                        echo date('d/m/Y', strtotime($week)) . ' - ' . date('d/m/Y', strtotime($week_end_display));
+                                        $week_end_display = getFridayAfterFriday($week);
+                                        echo date('d/m/Y', strtotime($week)) . ' - ' . date('d/m/Y', strtotime($week_end_display)) . ' (exclu)';
                                         if ($week === getFridayOfWeek(date('Y-m-d'))) {
                                             echo ' (Semaine courante)';
                                         }
