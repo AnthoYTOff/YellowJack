@@ -63,11 +63,11 @@ if ($_POST && isset($_POST['calculate_performance'])) {
             $config[$row['config_key']] = $row['config_value'];
         }
         
-        // Récupérer tous les utilisateurs CDD et CDI actifs
+        // Récupérer tous les utilisateurs actifs (CDD, CDI, Responsable, Patron)
         $stmt = $db->prepare("
             SELECT id, first_name, last_name, role 
             FROM users 
-            WHERE role IN ('CDD', 'CDI') AND status = 'active'
+            WHERE role IN ('CDD', 'CDI', 'Responsable', 'Patron') AND status = 'active'
         ");
         $stmt->execute();
         $users = $stmt->fetchAll();

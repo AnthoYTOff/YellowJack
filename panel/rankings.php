@@ -75,7 +75,7 @@ try {
             ROUND(AVG(cs.duration_minutes), 0) as duree_moyenne
         FROM users u
         LEFT JOIN cleaning_services cs ON u.id = cs.user_id 
-            AND DATE(cs.start_time) BETWEEN ? AND ?
+            AND DATE(cs.start_time) >= ? AND DATE(cs.start_time) < ?
             AND cs.status = 'completed'
         WHERE u.status = 'active'
         GROUP BY u.id, u.first_name, u.last_name, u.role
@@ -104,7 +104,7 @@ if ($auth->canAccessCashRegister()) {
                 SUM(CASE WHEN s.customer_id IS NOT NULL THEN 1 ELSE 0 END) as ventes_clients_fideles
             FROM users u
             LEFT JOIN sales s ON u.id = s.user_id 
-                AND DATE(s.created_at) BETWEEN ? AND ?
+                AND DATE(s.created_at) >= ? AND DATE(s.created_at) < ?
             WHERE u.status = 'active'
             GROUP BY u.id, u.first_name, u.last_name, u.role
             ORDER BY total_ventes DESC, ca_total DESC
@@ -126,7 +126,7 @@ try {
             SUM(cs.total_salary) as total_salaires_equipe,
             AVG(cs.total_salary) as salaire_moyen_equipe
         FROM cleaning_services cs
-        WHERE DATE(cs.start_time) BETWEEN ? AND ?
+        WHERE DATE(cs.start_time) >= ? AND DATE(cs.start_time) < ?
             AND cs.status = 'completed'
     ");
     $stmt->execute([$start_date, $end_date]);
@@ -140,7 +140,7 @@ try {
                 SUM(s.final_amount) as ca_total_equipe,
                 SUM(s.employee_commission) as commissions_totales_equipe
             FROM sales s
-            WHERE DATE(s.created_at) BETWEEN ? AND ?
+            WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) < ?
         ");
         $stmt->execute([$start_date, $end_date]);
         $sales_global = $stmt->fetch();

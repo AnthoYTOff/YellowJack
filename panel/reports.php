@@ -80,7 +80,7 @@ $stats_query = "
         COUNT(DISTINCT s.customer_id) as unique_customers,
         COUNT(DISTINCT s.user_id) as active_employees
     FROM sales s
-    WHERE s.created_at BETWEEN ? AND ?
+    WHERE s.created_at >= ? AND s.created_at < ?
 ";
 $stmt = $db->prepare($stats_query);
 $stmt->execute([$start_date, $end_date]);
@@ -95,7 +95,7 @@ $cleaning_stats_query = "
         COALESCE(AVG(cleaning_count), 0) as avg_cleanings_per_session,
         COUNT(DISTINCT user_id) as cleaning_employees
     FROM cleaning_services
-    WHERE end_time BETWEEN ? AND ?
+    WHERE end_time >= ? AND end_time < ?
 ";
 $stmt = $db->prepare($cleaning_stats_query);
 $stmt->execute([$start_date, $end_date]);
@@ -112,7 +112,7 @@ $top_products_query = "
     FROM sale_items sd
     JOIN products p ON sd.product_id = p.id
     JOIN sales s ON sd.sale_id = s.id
-    WHERE s.created_at BETWEEN ? AND ?
+    WHERE s.created_at >= ? AND s.created_at < ?
     GROUP BY p.id, p.name, p.selling_price
     ORDER BY total_sold DESC
     LIMIT 10
@@ -131,7 +131,7 @@ $top_sales_employees_query = "
         COALESCE(SUM(s.total_amount), 0) as total_revenue,
         COALESCE(SUM(s.employee_commission), 0) as total_commissions
     FROM users u
-    LEFT JOIN sales s ON u.id = s.user_id AND s.created_at BETWEEN ? AND ?
+    LEFT JOIN sales s ON u.id = s.user_id AND s.created_at >= ? AND s.created_at < ?
     WHERE u.role IN ('CDI', 'Responsable', 'Patron') AND u.status = 'active'
     GROUP BY u.id, u.first_name, u.last_name, u.role
     ORDER BY total_revenue DESC
@@ -151,7 +151,7 @@ $top_cleaning_employees_query = "
         COALESCE(SUM(cs.cleaning_count), 0) as total_cleanings,
         COALESCE(SUM(cs.total_salary), 0) as total_salary
     FROM users u
-    LEFT JOIN cleaning_services cs ON u.id = cs.user_id AND cs.end_time BETWEEN ? AND ?
+    LEFT JOIN cleaning_services cs ON u.id = cs.user_id AND cs.end_time >= ? AND cs.end_time < ?
     WHERE u.status = 'active'
     GROUP BY u.id, u.first_name, u.last_name, u.role
     ORDER BY total_cleanings DESC
@@ -168,7 +168,7 @@ $sales_evolution_query = "
         COUNT(s.id) as sales_count,
         COALESCE(SUM(s.total_amount), 0) as daily_revenue
     FROM sales s
-    WHERE s.created_at BETWEEN ? AND ?
+    WHERE s.created_at >= ? AND s.created_at < ?
     GROUP BY DATE(s.created_at)
     ORDER BY sale_day
 ";
@@ -186,7 +186,7 @@ $category_stats_query = "
     FROM product_categories c
     LEFT JOIN products p ON c.id = p.category_id
     LEFT JOIN sale_items sd ON p.id = sd.product_id
-    LEFT JOIN sales s ON sd.sale_id = s.id AND s.created_at BETWEEN ? AND ?
+    LEFT JOIN sales s ON sd.sale_id = s.id AND s.created_at >= ? AND s.created_at < ?
     GROUP BY c.id, c.name
     ORDER BY total_revenue DESC
 ";
@@ -203,7 +203,7 @@ $top_customers_query = "
         COALESCE(SUM(s.total_amount), 0) as total_spent,
         COALESCE(AVG(s.total_amount), 0) as avg_spent
     FROM customers c
-    LEFT JOIN sales s ON c.id = s.customer_id AND s.created_at BETWEEN ? AND ?
+    LEFT JOIN sales s ON c.id = s.customer_id AND s.created_at >= ? AND s.created_at < ?
     WHERE c.id > 1
     GROUP BY c.id, c.name, c.phone
     HAVING visits_count > 0
