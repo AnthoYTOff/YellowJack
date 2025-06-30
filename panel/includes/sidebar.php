@@ -125,6 +125,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     Performances Hebdo
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link <?php echo $current_page === 'taxes.php' ? 'active' : ''; ?>" href="taxes.php">
+                    <i class="fas fa-calculator"></i>
+                    Impôts
+                </a>
+            </li>
             <?php endif; ?>
         </ul>
         <?php endif; ?>
