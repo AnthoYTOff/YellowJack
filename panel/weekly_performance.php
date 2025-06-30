@@ -246,15 +246,18 @@ foreach ($performances as $perf) {
     
     <style>
         :root {
-            --primary-color: #8B4513; /* Brun western */
-            --secondary-color: #DAA520; /* Or/Jaune */
-            --accent-color: #CD853F; /* Beige sable */
-            --dark-color: #2F1B14; /* Brun foncé */
-            --light-color: #ffffff;
-            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            --border-radius: 8px;
-            --transition: all 0.3s ease;
-        }
+             --primary-color: #8B4513; /* Brun western */
+             --secondary-color: #DAA520; /* Or/Jaune */
+             --accent-color: #CD853F; /* Beige sable */
+             --dark-color: #2F1B14; /* Brun foncé */
+             --light-color: #F5DEB3; /* Beige clair */
+             --text-dark: #1a1a1a;
+             --text-light: #ffffff;
+             --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+             --border-radius: 8px;
+             --transition: all 0.3s ease;
+             --sidebar-width: 250px;
+         }
         
         .navbar {
             background: linear-gradient(135deg, var(--dark-color), var(--primary-color)) !important;
@@ -285,8 +288,46 @@ foreach ($performances as $perf) {
         }
         
         .sidebar {
-            background: linear-gradient(180deg, #34495e 0%, #2c3e50 100%);
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 80px 0 0;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.1);
+            background: linear-gradient(180deg, var(--light-color), #ffffff);
+            width: var(--sidebar-width);
+            transition: var(--transition);
             min-height: 100vh;
+        }
+        
+        .sidebar .nav-link {
+            font-weight: 500;
+            color: var(--text-dark);
+            padding: 0.75rem 1.5rem;
+            margin: 0.25rem 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+            position: relative;
+        }
+        
+        .sidebar .nav-link:hover {
+            color: var(--secondary-color);
+            background: rgba(218, 165, 32, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .sidebar .nav-link.active {
+            color: var(--dark-color);
+            background: linear-gradient(45deg, var(--secondary-color), #FFD700);
+            font-weight: 600;
+            box-shadow: var(--shadow);
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
         }
         
         .card {
