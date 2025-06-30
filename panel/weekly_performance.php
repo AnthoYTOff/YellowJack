@@ -23,7 +23,7 @@ if (!$auth->hasPermission('Patron')) {
 
 $page_title = 'Performances Hebdomadaires';
 
-// Fonction pour obtenir le vendredi de début de la semaine courante (vendredi à jeudi)
+// Fonction pour obtenir le vendredi de début de la semaine courante (vendredi à vendredi exclu)
 function getFridayOfWeek($date) {
     $timestamp = strtotime($date);
     $dayOfWeek = date('N', $timestamp); // 1 = Lundi, 5 = Vendredi
@@ -37,7 +37,7 @@ function getFridayOfWeek($date) {
         return date('Y-m-d', strtotime("-$daysToSubtract days", $timestamp));
     } else {
         // Si c'est lundi à jeudi, prendre le vendredi précédent
-        $daysToSubtract = $dayOfWeek + 2; // lundi=3, mardi=4, mercredi=5, jeudi=6
+    $daysToSubtract = $dayOfWeek + 2; // lundi=3, mardi=4, mercredi=5, jeudi=6 (logique vendredi-vendredi exclu)
         return date('Y-m-d', strtotime("-$daysToSubtract days", $timestamp));
     }
 }
@@ -399,7 +399,7 @@ foreach ($performances as $perf) {
                 <div class="card-header">
                     <h5 class="mb-0">
                         <i class="fas fa-calendar-week me-2"></i>
-                        Sélection de semaine (Vendredi à Jeudi)
+                        Sélection de semaine (Vendredi à Vendredi exclu)
                     </h5>
                 </div>
                 <div class="card-body">
@@ -424,7 +424,7 @@ foreach ($performances as $perf) {
                             <div class="alert alert-info mb-0">
                                 <i class="fas fa-info-circle me-2"></i>
                                 <strong>Période :</strong> Du vendredi <?php echo date('d/m/Y', strtotime($week_start)); ?> 
-                                au jeudi <?php echo date('d/m/Y', strtotime($week_end)); ?>
+                                au vendredi <?php echo date('d/m/Y', strtotime($week_end)); ?> (exclu)
                                 <?php if (date('Y-m-d') <= $week_end): ?>
                                     <span class="badge bg-warning text-dark ms-2">En cours</span>
                                 <?php else: ?>

@@ -9,7 +9,7 @@
 
 require_once '../config/database.php';
 
-// Fonction pour obtenir le vendredi de début de la semaine courante (vendredi à jeudi)
+// Fonction pour obtenir le vendredi de début de la semaine courante (vendredi à vendredi exclu)
 function getFridayOfWeek($date) {
     $timestamp = strtotime($date);
     $dayOfWeek = date('N', $timestamp); // 1 = Lundi, 5 = Vendredi
@@ -23,7 +23,7 @@ function getFridayOfWeek($date) {
         return date('Y-m-d', strtotime("-$daysToSubtract days", $timestamp));
     } else {
         // Si c'est lundi à jeudi, prendre le vendredi précédent
-        $daysToSubtract = $dayOfWeek + 2; // lundi=3, mardi=4, mercredi=5, jeudi=6
+    $daysToSubtract = $dayOfWeek + 2; // lundi=3, mardi=4, mercredi=5, jeudi=6 (logique vendredi-vendredi exclu)
         return date('Y-m-d', strtotime("-$daysToSubtract days", $timestamp));
     }
 }

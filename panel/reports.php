@@ -132,7 +132,7 @@ $top_sales_employees_query = "
         COALESCE(SUM(s.employee_commission), 0) as total_commissions
     FROM users u
     LEFT JOIN sales s ON u.id = s.user_id AND s.created_at >= ? AND s.created_at < ?
-    WHERE u.role IN ('CDI', 'Responsable', 'Patron') AND u.status = 'active'
+    WHERE u.role IN ('CDD', 'CDI', 'Responsable', 'Patron') AND u.status = 'active'
     GROUP BY u.id, u.first_name, u.last_name, u.role
     ORDER BY total_revenue DESC
     LIMIT 10
