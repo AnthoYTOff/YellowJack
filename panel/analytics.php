@@ -70,7 +70,7 @@ try {
             SUM(cs.duration_minutes) as total_minutes,
             COUNT(DISTINCT cs.user_id) as employes_actifs
         FROM cleaning_services cs
-        WHERE DATE(cs.start_time) >= ? AND DATE(cs.start_time) < ?
+        WHERE DATE(cs.start_time) >= ? AND DATE(cs.start_time) <= ?
         AND cs.status = 'completed'
     ");
     $stmt->execute([$start_date, $end_date]);
@@ -85,7 +85,7 @@ try {
             AVG(s.final_amount) as panier_moyen,
             COUNT(DISTINCT s.customer_id) as clients_uniques
         FROM sales s
-        WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) < ?
+        WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
     ");
     $stmt->execute([$start_date, $end_date]);
     $sales_stats = $stmt->fetch();
@@ -105,7 +105,7 @@ try {
             SUM(cs.cleaning_count) as menages,
             SUM(cs.total_salary) as salaires
         FROM cleaning_services cs
-        WHERE DATE(cs.start_time) >= ? AND DATE(cs.start_time) < ?
+        WHERE DATE(cs.start_time) >= ? AND DATE(cs.start_time) <= ?
         AND cs.status = 'completed'
         GROUP BY DATE(cs.start_time)
         ORDER BY DATE(cs.start_time)
@@ -120,7 +120,7 @@ try {
             SUM(s.final_amount) as ca,
             SUM(s.employee_commission) as commissions
         FROM sales s
-        WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) < ?
+        WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
         GROUP BY DATE(s.created_at)
         ORDER BY DATE(s.created_at)
     ");
@@ -161,10 +161,10 @@ try {
             SUM(s.employee_commission) as commissions_ventes
         FROM users u
         LEFT JOIN cleaning_services cs ON u.id = cs.user_id 
-            AND DATE(cs.start_time) >= ? AND DATE(cs.start_time) < ?
+            AND DATE(cs.start_time) >= ? AND DATE(cs.start_time) <= ?
             AND cs.status = 'completed'
         LEFT JOIN sales s ON u.id = s.user_id
-            AND DATE(s.created_at) >= ? AND DATE(s.created_at) < ?
+            AND DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
         WHERE u.status = 'active'
         GROUP BY u.id, u.first_name, u.last_name, u.role
         ORDER BY (COALESCE(total_menages, 0) + COALESCE(total_ventes, 0)) DESC
@@ -190,7 +190,7 @@ try {
             MAX(s.created_at) as derniere_visite
         FROM customers c
         INNER JOIN sales s ON c.id = s.customer_id
-        WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) < ?
+        WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
         GROUP BY c.id, c.first_name, c.last_name, c.phone
         ORDER BY ca_total DESC
         LIMIT 10

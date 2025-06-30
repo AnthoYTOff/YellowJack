@@ -2,7 +2,7 @@
 /**
  * Page de gestion des impôts - Panel Patron Le Yellowjack
  * Calcul automatique des impôts hebdomadaires (vendredi à vendredi)
- * Période: du vendredi inclus au vendredi suivant exclu
+ * Période: du vendredi inclus au vendredi suivant inclus
  * 
  * @author Développeur Web Professionnel
  * @version 1.0
@@ -24,7 +24,7 @@ if (!$auth->hasPermission('Patron')) {
 
 $page_title = 'Gestion des Impôts';
 
-// Fonction pour obtenir le vendredi de début de la semaine courante (vendredi à vendredi exclu)
+// Fonction pour obtenir le vendredi de début de la semaine courante (vendredi à vendredi inclus)
 function getFridayOfWeek($date) {
     $timestamp = strtotime($date);
     $dayOfWeek = date('N', $timestamp); // 1 = Lundi, 5 = Vendredi
@@ -38,7 +38,7 @@ function getFridayOfWeek($date) {
         return date('Y-m-d', strtotime("-$daysToSubtract days", $timestamp));
     } else {
         // Si c'est lundi à jeudi, prendre le vendredi précédent
-    $daysToSubtract = $dayOfWeek + 2; // lundi=3, mardi=4, mercredi=5, jeudi=6 (logique vendredi-vendredi exclu)
+    $daysToSubtract = $dayOfWeek + 2; // lundi=3, mardi=4, mercredi=5, jeudi=6 (logique vendredi-vendredi inclus)
         return date('Y-m-d', strtotime("-$daysToSubtract days", $timestamp));
     }
 }
@@ -109,11 +109,11 @@ $error_message = '';
 // Action de calcul/recalcul des impôts
 if ($_POST && isset($_POST['calculate_taxes'])) {
     try {
-        // Calculer le CA total de la semaine (vendredi à vendredi exclu)
+        // Calculer le CA total de la semaine (vendredi à vendredi inclus)
         $stmt = $db->prepare("
             SELECT COALESCE(SUM(final_amount), 0) as total_revenue
             FROM sales 
-            WHERE DATE(created_at) >= ? AND DATE(created_at) < ?
+            WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?
         ");
         $stmt->execute([$week_start, $week_end]);
         $result = $stmt->fetch();
@@ -144,7 +144,7 @@ if ($_POST && isset($_POST['calculate_taxes'])) {
             json_encode($tax_calculation['breakdown'])
         ]);
         
-        $success_message = "Impôts calculés avec succès pour la semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " (exclu)";
+        $success_message = "Impôts calculés avec succès pour la semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " (inclus)";
         
     } catch (Exception $e) {
         $error_message = "Erreur lors du calcul des impôts : " . $e->getMessage();
@@ -210,13 +210,13 @@ try {
     $available_weeks = [getFridayOfWeek(date('Y-m-d'))];
 }
 
-// Récupérer le CA de la semaine courante (vendredi à vendredi exclu)
+// Récupérer le CA de la semaine courante (vendredi à vendredi inclus)
 $current_revenue = 0;
 try {
     $stmt = $db->prepare("
         SELECT COALESCE(SUM(final_amount), 0) as total_revenue
         FROM sales 
-        WHERE DATE(created_at) >= ? AND DATE(created_at) < ?
+        WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?
     ");
     $stmt->execute([$week_start, $week_end]);
     $result = $stmt->fetch();
@@ -369,9 +369,15 @@ try {
         }
         
         .revenue-display {
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: bold;
             color: var(--primary-color);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        
+        .bg-orange {
+            background-color: #fd7e14 !important;
+            color: white !important;
         }
         
         .tax-display {
@@ -397,7 +403,7 @@ try {
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <span class="badge bg-warning text-dark fs-6">
                             <i class="fas fa-calendar-week me-1"></i>
-                            Semaine du <?php echo date('d/m/Y', strtotime($week_start)); ?> au <?php echo date('d/m/Y', strtotime($week_end)); ?> (exclu)
+                            Semaine du <?php echo date('d/m/Y', strtotime($week_start)); ?> au <?php echo date('d/m/Y', strtotime($week_end)); ?> (inclus)
                         </span>
                     </div>
                 </div>
@@ -433,7 +439,7 @@ try {
                                     <select name="week" class="form-select">
                                         <?php foreach ($available_weeks as $week): ?>
                                             <option value="<?php echo $week; ?>" <?php echo ($week == $selected_week) ? 'selected' : ''; ?>>
-                                            Semaine du <?php echo date('d/m/Y', strtotime($week)); ?> au <?php echo date('d/m/Y', strtotime(getFridayAfterFriday($week))); ?> (exclu)
+                                            Semaine du <?php echo date('d/m/Y', strtotime($week)); ?> au <?php echo date('d/m/Y', strtotime(getFridayAfterFriday($week))); ?> (inclus)
                                         </option>
                                         <?php endforeach; ?>
                                     </select>
@@ -456,6 +462,51 @@ try {
                             <div class="card-body text-center">
                                 <div class="revenue-display">
                                     <?php echo number_format($current_revenue, 2, ',', ' '); ?> €
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Détails du calcul des impôts -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Détails du calcul des impôts
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="text-primary"><i class="fas fa-calendar-alt me-2"></i>Période de calcul</h6>
+                                        <p class="mb-3">Les impôts sont calculés sur une base hebdomadaire du <strong>vendredi inclus au vendredi suivant inclus</strong>.</p>
+                                        
+                                        <h6 class="text-primary"><i class="fas fa-percentage me-2"></i>Barème progressif</h6>
+                                        <ul class="list-unstyled">
+                                            <li><span class="badge bg-success me-2">0%</span> De 0€ à 1 000€</li>
+                                            <li><span class="badge bg-warning me-2">5%</span> De 1 001€ à 5 000€</li>
+                                            <li><span class="badge bg-orange me-2">10%</span> De 5 001€ à 10 000€</li>
+                                            <li><span class="badge bg-danger me-2">15%</span> Au-delà de 10 000€</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="text-primary"><i class="fas fa-users me-2"></i>Revenus inclus</h6>
+                                        <p class="mb-3">Tous les revenus de l'établissement sont pris en compte :</p>
+                                        <ul class="list-unstyled">
+                                            <li><i class="fas fa-check text-success me-2"></i>Ventes Patron</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>Ventes Sous-Patron</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>Ventes Employés</li>
+                                            <li><i class="fas fa-check text-success me-2"></i>Ventes Stagiaires</li>
+                                        </ul>
+                                        
+                                        <div class="alert alert-info mt-3">
+                                            <i class="fas fa-lightbulb me-2"></i>
+                                            <strong>Calcul automatique :</strong> Les impôts sont calculés automatiquement selon le barème progressif appliqué au chiffre d'affaires total de la semaine.
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -95,7 +95,7 @@ try {
             AVG(total_salary) as salaire_moyen,
             SUM(duration_minutes) as total_minutes
         FROM cleaning_services 
-        WHERE user_id = ? AND DATE(start_time) >= ? AND DATE(start_time) < ?
+        WHERE user_id = ? AND DATE(start_time) >= ? AND DATE(start_time) <= ?
     ");
     $stmt->execute([$user['id'], $start_date, $end_date]);
     $cleaning_stats = $stmt->fetch();
@@ -127,7 +127,7 @@ if ($auth->canAccessCashRegister()) {
                 AVG(final_amount) as panier_moyen,
                 SUM(CASE WHEN customer_id IS NOT NULL THEN 1 ELSE 0 END) as ventes_clients_fideles
             FROM sales 
-            WHERE user_id = ? AND DATE(created_at) >= ? AND DATE(created_at) < ?
+            WHERE user_id = ? AND DATE(created_at) >= ? AND DATE(created_at) <= ?
         ");
         $stmt->execute([$user['id'], $start_date, $end_date]);
         $sales_stats = $stmt->fetch();

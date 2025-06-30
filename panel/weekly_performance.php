@@ -23,7 +23,7 @@ if (!$auth->hasPermission('Patron')) {
 
 $page_title = 'Performances Hebdomadaires';
 
-// Fonction pour obtenir le vendredi de début de la semaine courante (vendredi à vendredi exclu)
+// Fonction pour obtenir le vendredi de début de la semaine courante (vendredi à vendredi inclus)
 function getFridayOfWeek($date) {
     $timestamp = strtotime($date);
     $dayOfWeek = date('N', $timestamp); // 1 = Lundi, 5 = Vendredi
@@ -82,13 +82,13 @@ if ($_POST && isset($_POST['calculate_performance'])) {
                     COALESCE(SUM(cs.duration_minutes), 0) / 60 as total_hours
                 FROM cleaning_services cs
                 WHERE cs.user_id = ? 
-                    AND DATE(cs.start_time) >= ? AND DATE(cs.start_time) < ?
+                    AND DATE(cs.start_time) >= ? AND DATE(cs.start_time) <= ?
                     AND cs.status = 'completed'
             ");
             $stmt->execute([$employee['id'], $week_start, $week_end]);
             $cleaning_stats = $stmt->fetch();
             
-            // Calculer les statistiques ventes (vendredi à vendredi exclu)
+            // Calculer les statistiques ventes (vendredi à vendredi inclus)
             $stmt = $db->prepare("
                 SELECT 
                     COUNT(s.id) as total_ventes,
@@ -96,7 +96,7 @@ if ($_POST && isset($_POST['calculate_performance'])) {
                     COALESCE(SUM(s.employee_commission), 0) as total_commissions
                 FROM sales s
                 WHERE s.user_id = ? 
-                    AND DATE(s.created_at) >= ? AND DATE(s.created_at) < ?
+                    AND DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
             ");
             $stmt->execute([$employee['id'], $week_start, $week_end]);
             $sales_stats = $stmt->fetch();
@@ -411,7 +411,7 @@ foreach ($performances as $perf) {
                                     <option value="<?php echo $week; ?>" <?php echo $week === $selected_week ? 'selected' : ''; ?>>
                                         <?php 
                                         $week_end_display = getFridayAfterFriday($week);
-                                        echo date('d/m/Y', strtotime($week)) . ' - ' . date('d/m/Y', strtotime($week_end_display)) . ' (exclu)';
+                                        echo date('d/m/Y', strtotime($week)) . ' - ' . date('d/m/Y', strtotime($week_end_display)) . ' (inclus)';
                                         if ($week === getFridayOfWeek(date('Y-m-d'))) {
                                             echo ' (Semaine courante)';
                                         }
@@ -424,7 +424,7 @@ foreach ($performances as $perf) {
                             <div class="alert alert-info mb-0">
                                 <i class="fas fa-info-circle me-2"></i>
                                 <strong>Période :</strong> Du vendredi <?php echo date('d/m/Y', strtotime($week_start)); ?> 
-                                au vendredi <?php echo date('d/m/Y', strtotime($week_end)); ?> (exclu)
+                                au vendredi <?php echo date('d/m/Y', strtotime($week_end)); ?> (inclus)
                                 <?php if (date('Y-m-d') <= $week_end): ?>
                                     <span class="badge bg-warning text-dark ms-2">En cours</span>
                                 <?php else: ?>
