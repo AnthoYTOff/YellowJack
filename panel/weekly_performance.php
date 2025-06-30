@@ -52,6 +52,15 @@ $selected_week = $_GET['week'] ?? getFridayOfWeek(date('Y-m-d'));
 $week_start = $selected_week; // Vendredi
 $week_end = getFridayAfterFriday($week_start); // Vendredi suivant
 
+// Messages
+$success_message = '';
+$error_message = '';
+
+// Gestion du message de succès après redirection
+if (isset($_GET['success']) && $_GET['success'] == '1') {
+    $success_message = "Performances calculées avec succès pour la semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " (inclus)";
+}
+
 // Action de calcul/recalcul des performances
 if ($_POST && isset($_POST['calculate_performance'])) {
     try {
@@ -159,7 +168,9 @@ if ($_POST && isset($_POST['calculate_performance'])) {
             ]);
         }
         
-        $success_message = "Performances calculées avec succès pour la semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end));
+        // Redirection pour actualiser les données
+        header("Location: weekly_performance.php?week=" . urlencode($week_start) . "&success=1");
+        exit();
         
     } catch (Exception $e) {
         $error_message = "Erreur lors du calcul des performances : " . $e->getMessage();

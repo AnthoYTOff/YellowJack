@@ -106,6 +106,11 @@ $week_end = getFridayAfterFriday($week_start); // Vendredi suivant
 $success_message = '';
 $error_message = '';
 
+// Gestion du message de succès après redirection
+if (isset($_GET['success']) && $_GET['success'] == '1') {
+    $success_message = "Impôts calculés avec succès pour la semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " (inclus)";
+}
+
 // Action de calcul/recalcul des impôts
 if ($_POST && isset($_POST['calculate_taxes'])) {
     try {
@@ -144,7 +149,9 @@ if ($_POST && isset($_POST['calculate_taxes'])) {
             json_encode($tax_calculation['breakdown'])
         ]);
         
-        $success_message = "Impôts calculés avec succès pour la semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " (inclus)";
+        // Redirection pour actualiser les données
+        header("Location: taxes.php?week=" . urlencode($week_start) . "&success=1");
+        exit();
         
     } catch (Exception $e) {
         $error_message = "Erreur lors du calcul des impôts : " . $e->getMessage();
@@ -485,12 +492,14 @@ try {
                                         <p class="mb-3">Les impôts sont calculés sur une base hebdomadaire du <strong>vendredi inclus au vendredi suivant inclus</strong>.</p>
                                         
                                         <h6 class="text-primary"><i class="fas fa-percentage me-2"></i>Barème progressif</h6>
-                                        <ul class="list-unstyled">
-                                            <li><span class="badge bg-success me-2">0%</span> De 0€ à 1 000€</li>
-                                            <li><span class="badge bg-warning me-2">5%</span> De 1 001€ à 5 000€</li>
-                                            <li><span class="badge bg-orange me-2">10%</span> De 5 001€ à 10 000€</li>
-                                            <li><span class="badge bg-danger me-2">15%</span> Au-delà de 10 000€</li>
-                                        </ul>
+                                         <ul class="list-unstyled">
+                                             <li><span class="badge bg-success me-2">0%</span> De 0€ à 200 000€</li>
+                                             <li><span class="badge bg-info me-2">6%</span> De 200 001€ à 400 000€</li>
+                                             <li><span class="badge bg-warning me-2">10%</span> De 400 001€ à 600 000€</li>
+                                             <li><span class="badge bg-orange me-2">15%</span> De 600 001€ à 800 000€</li>
+                                             <li><span class="badge bg-danger me-2">20%</span> De 800 001€ à 1 000 000€</li>
+                                             <li><span class="badge bg-dark me-2">25%</span> Au-delà de 1 000 000€</li>
+                                         </ul>
                                     </div>
                                     <div class="col-md-6">
                                         <h6 class="text-primary"><i class="fas fa-users me-2"></i>Revenus inclus</h6>
