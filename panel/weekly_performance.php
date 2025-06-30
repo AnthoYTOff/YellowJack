@@ -42,15 +42,15 @@ function getFridayOfWeek($date) {
     }
 }
 
-// Fonction pour obtenir le jeudi suivant le vendredi
-function getThursdayAfterFriday($friday) {
-    return date('Y-m-d', strtotime('+6 days', strtotime($friday)));
+// Fonction pour obtenir le vendredi suivant (fin de semaine)
+function getFridayAfterFriday($friday) {
+    return date('Y-m-d', strtotime('+7 days', strtotime($friday)));
 }
 
 // Semaine sélectionnée (par défaut la semaine courante)
 $selected_week = $_GET['week'] ?? getFridayOfWeek(date('Y-m-d'));
 $week_start = $selected_week; // Vendredi
-$week_end = getThursdayAfterFriday($week_start); // Jeudi suivant
+$week_end = getFridayAfterFriday($week_start); // Vendredi suivant
 
 // Action de calcul/recalcul des performances
 if ($_POST && isset($_POST['calculate_performance'])) {
@@ -73,7 +73,7 @@ if ($_POST && isset($_POST['calculate_performance'])) {
         $users = $stmt->fetchAll();
         
         foreach ($users as $employee) {
-            // Calculer les statistiques ménage
+            // Calculer les statistiques ménage (vendredi à vendredi exclu)
             $stmt = $db->prepare("
                 SELECT 
                     COUNT(cs.id) as total_services,
@@ -82,13 +82,13 @@ if ($_POST && isset($_POST['calculate_performance'])) {
                     COALESCE(SUM(cs.duration_minutes), 0) / 60 as total_hours
                 FROM cleaning_services cs
                 WHERE cs.user_id = ? 
-                    AND DATE(cs.start_time) BETWEEN ? AND ?
+                    AND DATE(cs.start_time) >= ? AND DATE(cs.start_time) < ?
                     AND cs.status = 'completed'
             ");
             $stmt->execute([$employee['id'], $week_start, $week_end]);
             $cleaning_stats = $stmt->fetch();
             
-            // Calculer les statistiques ventes
+            // Calculer les statistiques ventes (vendredi à vendredi exclu)
             $stmt = $db->prepare("
                 SELECT 
                     COUNT(s.id) as total_ventes,
@@ -96,7 +96,7 @@ if ($_POST && isset($_POST['calculate_performance'])) {
                     COALESCE(SUM(s.employee_commission), 0) as total_commissions
                 FROM sales s
                 WHERE s.user_id = ? 
-                    AND DATE(s.created_at) BETWEEN ? AND ?
+                    AND DATE(s.created_at) >= ? AND DATE(s.created_at) < ?
             ");
             $stmt->execute([$employee['id'], $week_start, $week_end]);
             $sales_stats = $stmt->fetch();
@@ -410,7 +410,7 @@ foreach ($performances as $perf) {
                                 <?php foreach ($available_weeks as $week): ?>
                                     <option value="<?php echo $week; ?>" <?php echo $week === $selected_week ? 'selected' : ''; ?>>
                                         <?php 
-                                        $week_end_display = getThursdayAfterFriday($week);
+                                        $week_end_display = date('Y-m-d', strtotime('-1 day', strtotime(getFridayAfterFriday($week))));
                                         echo date('d/m/Y', strtotime($week)) . ' - ' . date('d/m/Y', strtotime($week_end_display));
                                         if ($week === getFridayOfWeek(date('Y-m-d'))) {
                                             echo ' (Semaine courante)';

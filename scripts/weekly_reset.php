@@ -28,9 +28,9 @@ function getFridayOfWeek($date) {
     }
 }
 
-// Fonction pour obtenir le jeudi suivant le vendredi
-function getThursdayAfterFriday($friday) {
-    return date('Y-m-d', strtotime('+6 days', strtotime($friday)));
+// Fonction pour obtenir le vendredi suivant (fin de semaine)
+function getFridayAfterFriday($friday) {
+    return date('Y-m-d', strtotime('+7 days', strtotime($friday)));
 }
 
 try {
@@ -50,7 +50,7 @@ try {
     
     // Finaliser les performances de la semaine précédente
     $previous_week_start = date('Y-m-d', strtotime('-7 days', strtotime($today)));
-    $previous_week_end = getThursdayAfterFriday($previous_week_start);
+    $previous_week_end = getFridayAfterFriday($previous_week_start);
     
     $stmt = $db->prepare("
         UPDATE weekly_performance 
@@ -83,7 +83,7 @@ try {
     $users = $stmt->fetchAll();
     
     $new_week_start = $today; // Vendredi actuel
-    $new_week_end = getThursdayAfterFriday($new_week_start);
+    $new_week_end = getFridayAfterFriday($new_week_start);
     
     $processed_users = 0;
     

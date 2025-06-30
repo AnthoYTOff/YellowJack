@@ -2,6 +2,7 @@
 /**
  * Page de gestion des impôts - Panel Patron Le Yellowjack
  * Calcul automatique des impôts hebdomadaires (vendredi à vendredi)
+ * Période: du vendredi inclus au vendredi suivant exclu (soit vendredi à jeudi)
  * 
  * @author Développeur Web Professionnel
  * @version 1.0
@@ -42,9 +43,9 @@ function getFridayOfWeek($date) {
     }
 }
 
-// Fonction pour obtenir le jeudi suivant le vendredi
-function getThursdayAfterFriday($friday) {
-    return date('Y-m-d', strtotime('+6 days', strtotime($friday)));
+// Fonction pour obtenir le vendredi suivant (fin de semaine)
+function getFridayAfterFriday($friday) {
+    return date('Y-m-d', strtotime('+7 days', strtotime($friday)));
 }
 
 // Fonction pour calculer les impôts selon le barème progressif
@@ -99,7 +100,7 @@ function calculateTax($revenue, $db) {
 // Semaine sélectionnée (par défaut la semaine courante)
 $selected_week = $_GET['week'] ?? getFridayOfWeek(date('Y-m-d'));
 $week_start = $selected_week; // Vendredi
-$week_end = getThursdayAfterFriday($week_start); // Jeudi suivant
+$week_end = getFridayAfterFriday($week_start); // Vendredi suivant
 
 // Messages
 $success_message = '';
@@ -108,11 +109,11 @@ $error_message = '';
 // Action de calcul/recalcul des impôts
 if ($_POST && isset($_POST['calculate_taxes'])) {
     try {
-        // Calculer le CA total de la semaine
+        // Calculer le CA total de la semaine (vendredi à vendredi exclu)
         $stmt = $db->prepare("
             SELECT COALESCE(SUM(final_amount), 0) as total_revenue
             FROM sales 
-            WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?
+            WHERE DATE(created_at) >= ? AND DATE(created_at) < ?
         ");
         $stmt->execute([$week_start, $week_end]);
         $result = $stmt->fetch();
@@ -143,7 +144,7 @@ if ($_POST && isset($_POST['calculate_taxes'])) {
             json_encode($tax_calculation['breakdown'])
         ]);
         
-        $success_message = "Impôts calculés avec succès pour la semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end));
+        $success_message = "Impôts calculés avec succès pour la semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime('-1 day', strtotime($week_end)));
         
     } catch (Exception $e) {
         $error_message = "Erreur lors du calcul des impôts : " . $e->getMessage();
@@ -209,13 +210,13 @@ try {
     $available_weeks = [getFridayOfWeek(date('Y-m-d'))];
 }
 
-// Récupérer le CA de la semaine courante
+// Récupérer le CA de la semaine courante (vendredi à vendredi exclu)
 $current_revenue = 0;
 try {
     $stmt = $db->prepare("
         SELECT COALESCE(SUM(final_amount), 0) as total_revenue
         FROM sales 
-        WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?
+        WHERE DATE(created_at) >= ? AND DATE(created_at) < ?
     ");
     $stmt->execute([$week_start, $week_end]);
     $result = $stmt->fetch();
@@ -396,7 +397,7 @@ try {
                     <div class="btn-toolbar mb-2 mb-md-0">
                         <span class="badge bg-warning text-dark fs-6">
                             <i class="fas fa-calendar-week me-1"></i>
-                            Semaine du <?php echo date('d/m/Y', strtotime($week_start)); ?> au <?php echo date('d/m/Y', strtotime($week_end)); ?>
+                            Semaine du <?php echo date('d/m/Y', strtotime($week_start)); ?> au <?php echo date('d/m/Y', strtotime('-1 day', strtotime($week_end))); ?>
                         </span>
                     </div>
                 </div>
@@ -432,8 +433,8 @@ try {
                                     <select name="week" class="form-select">
                                         <?php foreach ($available_weeks as $week): ?>
                                             <option value="<?php echo $week; ?>" <?php echo ($week == $selected_week) ? 'selected' : ''; ?>>
-                                                Semaine du <?php echo date('d/m/Y', strtotime($week)); ?> au <?php echo date('d/m/Y', strtotime(getThursdayAfterFriday($week))); ?>
-                                            </option>
+                                            Semaine du <?php echo date('d/m/Y', strtotime($week)); ?> au <?php echo date('d/m/Y', strtotime('-1 day', strtotime(getFridayAfterFriday($week)))); ?>
+                                        </option>
                                         <?php endforeach; ?>
                                     </select>
                                     <button type="submit" class="btn btn-primary">
