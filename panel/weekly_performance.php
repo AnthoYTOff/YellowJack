@@ -225,10 +225,61 @@ foreach ($performances as $perf) {
     $totals['prime_totale_total'] += $perf['prime_totale'];
 }
 
-include 'includes/header.php';
 ?>
 
-<div class="container-fluid">
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo $page_title; ?> - Le Yellowjack</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../assets/css/panel.css">
+    
+    <style>
+        .navbar {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        }
+        
+        .sidebar {
+            background: linear-gradient(180deg, #34495e 0%, #2c3e50 100%);
+            min-height: 100vh;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .btn {
+            border-radius: 8px;
+        }
+        
+        .alert {
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <?php include 'includes/header.php'; ?>
+    
+    <div class="container-fluid">
     <div class="row">
         <?php include 'includes/sidebar.php'; ?>
         
@@ -430,4 +481,8 @@ include 'includes/header.php';
     </div>
 </div>
 
-<?php include 'includes/footer.php'; ?>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
