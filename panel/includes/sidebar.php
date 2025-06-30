@@ -118,6 +118,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     Rapports
                 </a>
             </li>
+            <?php if ($auth->hasPermission('Patron')): ?>
+            <li class="nav-item">
+                <a class="nav-link <?php echo $current_page === 'weekly_performance.php' ? 'active' : ''; ?>" href="weekly_performance.php">
+                    <i class="fas fa-trophy"></i>
+                    Performances Hebdo
+                </a>
+            </li>
+            <?php endif; ?>
         </ul>
         <?php endif; ?>
         
