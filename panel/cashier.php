@@ -110,7 +110,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $business_discount = $total_amount * ($customer['business_discount'] / 100);
                         }
                         
-                        $discount_amount = $loyalty_discount + $business_discount;
+                        // Prendre la réduction la plus élevée (non cumulable)
+                    $discount_amount = max($loyalty_discount, $business_discount);
                     }
                     
                     $final_amount = $total_amount - $discount_amount;
@@ -714,7 +715,8 @@ $page_title = 'Caisse Enregistreuse';
                 }
             }
             
-            const totalDiscount = loyaltyDiscount + businessDiscount;
+            // Prendre la réduction la plus élevée (non cumulable)
+            const totalDiscount = Math.max(loyaltyDiscount, businessDiscount);
             const total = subtotal - totalDiscount;
             const commission = total * (<?php echo COMMISSION_RATE; ?> / 100);
             

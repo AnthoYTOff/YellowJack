@@ -396,9 +396,8 @@ $page_title = 'Historique des Ventes';
                 </div>
                 <div class="modal-body" id="saleDetailsContent">
                     <div class="text-center">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Chargement...</span>
-                        </div>
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        <p class="mt-2">Chargement...</p>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -412,27 +411,114 @@ $page_title = 'Historique des Ventes';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        function viewSaleDetails(saleId) {
-            const content = document.getElementById('saleDetailsContent');
-            content.innerHTML = `
-                <div class="text-center">
-                    <div class="spinner-border" role="status">
-                        <span class="visually-hidden">Chargement...</span>
-                    </div>
-                </div>
-            `;
-            
-            // Simuler le chargement des détails (à implémenter avec AJAX)
-            setTimeout(() => {
+    function viewSaleDetails(saleId) {
+        const content = document.getElementById('saleDetailsContent');
+        
+        // Afficher le loader
+        content.innerHTML = `
+            <div class="text-center">
+                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                <p class="mt-2">Chargement des détails...</p>
+            </div>
+        `;
+        
+        // Récupérer les détails via AJAX
+        fetch(`get_sale_details.php?id=${saleId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur lors du chargement');
+                }
+                return response.json();
+            })
+            .then(data => {
+                displaySaleDetails(data);
+            })
+            .catch(error => {
                 content.innerHTML = `
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Fonctionnalité en cours de développement.
-                        <br>Ticket #${saleId} - Détails complets bientôt disponibles.
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Erreur lors du chargement des détails: ${error.message}
                     </div>
                 `;
-            }, 500);
+            });
+    }
+    
+    function displaySaleDetails(data) {
+        const { sale, items, discount_details } = data;
+        const content = document.getElementById('saleDetailsContent');
+        
+        let itemsHtml = '';
+        if (items && items.length > 0) {
+            itemsHtml = items.map(item => `
+                <tr>
+                    <td>${item.product_name || 'Produit supprimé'}</td>
+                    <td class="text-center">${item.quantity}</td>
+                    <td class="text-end">${parseFloat(item.unit_price).toFixed(2)}$</td>
+                    <td class="text-end fw-bold">${parseFloat(item.total_price).toFixed(2)}$</td>
+                </tr>
+            `).join('');
+        } else {
+            itemsHtml = '<tr><td colspan="4" class="text-center text-muted">Aucun article trouvé</td></tr>';
         }
+        
+        let discountHtml = '';
+        if (discount_details.applied_discount > 0) {
+            discountHtml = `
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-percentage me-2"></i>Réduction appliquée</h6>
+                    <p class="mb-1"><strong>Type:</strong> ${discount_details.discount_type}</p>
+                    <p class="mb-1"><strong>Pourcentage:</strong> ${discount_details.applied_discount}%</p>
+                    <p class="mb-0"><strong>Montant:</strong> ${parseFloat(sale.discount_amount).toFixed(2)}$</p>
+                    ${discount_details.loyal_discount > 0 && discount_details.company_discount > 0 ? 
+                        `<small class="text-muted">Note: Client fidèle (${discount_details.loyal_discount}%) et entreprise (${discount_details.company_discount}%) - La réduction la plus élevée a été appliquée.</small>` : ''}
+                </div>
+            `;
+        }
+        
+        content.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><i class="fas fa-info-circle me-2"></i>Informations générales</h6>
+                    <table class="table table-sm">
+                        <tr><td><strong>Ticket #:</strong></td><td>#${sale.id}</td></tr>
+                        <tr><td><strong>Date:</strong></td><td>${new Date(sale.created_at).toLocaleString('fr-FR')}</td></tr>
+                        <tr><td><strong>Vendeur:</strong></td><td>${sale.first_name} ${sale.last_name}</td></tr>
+                        <tr><td><strong>Client:</strong></td><td>${sale.customer_name || 'Client anonyme'}${sale.customer_loyal ? ' <i class="fas fa-star text-warning" title="Client fidèle"></i>' : ''}</td></tr>
+                        ${sale.company_name ? `<tr><td><strong>Entreprise:</strong></td><td>${sale.company_name}</td></tr>` : ''}
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6><i class="fas fa-calculator me-2"></i>Résumé financier</h6>
+                    <table class="table table-sm">
+                        <tr><td><strong>Sous-total:</strong></td><td class="text-end">${parseFloat(sale.total_amount).toFixed(2)}$</td></tr>
+                        <tr><td><strong>Réduction:</strong></td><td class="text-end text-success">-${parseFloat(sale.discount_amount).toFixed(2)}$</td></tr>
+                        <tr class="table-success"><td><strong>Total final:</strong></td><td class="text-end fw-bold">${parseFloat(sale.final_amount).toFixed(2)}$</td></tr>
+                        <tr class="table-warning"><td><strong>Commission employé:</strong></td><td class="text-end fw-bold">${parseFloat(sale.employee_commission).toFixed(2)}$</td></tr>
+                    </table>
+                </div>
+            </div>
+            
+            ${discountHtml}
+            
+            <h6><i class="fas fa-shopping-cart me-2"></i>Articles vendus</h6>
+            <div class="table-responsive">
+                <table class="table table-striped table-sm">
+                    <thead>
+                        <tr>
+                            <th>Produit</th>
+                            <th class="text-center">Quantité</th>
+                            <th class="text-end">Prix unitaire</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHtml}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
     </script>
+
 </body>
 </html>

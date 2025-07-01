@@ -114,11 +114,24 @@ if ($_POST && isset($_POST['calculate_performance'])) {
             $prime_menage = 0;
             $prime_ventes = 0;
             
-            // Prime ménage
+            // Prime ménage (différenciée par type de contrat)
             if ($cleaning_stats['total_menages'] > 0) {
-                $prime_menage = $cleaning_stats['total_menages'] * $config['prime_menage_per_unit'];
+                // Calcul de la prime selon le type de contrat
+                $base_salary_per_menage = 60; // 60$ par ménage
+                if ($employee['role'] === 'CDD') {
+                    // CDD: 30% de prime sur 60$ = 18$ de prime par ménage
+                    $prime_percentage = 0.30;
+                } elseif ($employee['role'] === 'CDI') {
+                    // CDI: 36% de prime sur 60$ = 21.60$ de prime par ménage
+                    $prime_percentage = 0.36;
+                } else {
+                    // Autres rôles (Responsable, Patron): utiliser l'ancien système
+                    $prime_percentage = $config['prime_menage_per_unit'] / $base_salary_per_menage;
+                }
                 
-                // Bonus si dépassement du seuil
+                $prime_menage = $cleaning_stats['total_menages'] * ($base_salary_per_menage * $prime_percentage);
+                
+                // Bonus si dépassement du seuil (optionnel, à conserver si souhaité)
                 if ($cleaning_stats['total_menages'] > $config['prime_menage_bonus_threshold']) {
                     $bonus_menages = $cleaning_stats['total_menages'] - $config['prime_menage_bonus_threshold'];
                     $prime_menage += $bonus_menages * $config['prime_menage_bonus_rate'];
