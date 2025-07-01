@@ -123,7 +123,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $commission_rate = 10; // 10% pour les autres rôles (CDD)
         }
         
-        $commission = $final_amount * ($commission_rate / 100);
+        // Calculer la commission sur le bénéfice total des produits vendus
+        $total_profit = 0;
+        foreach ($cart as $item) {
+            // Récupérer les prix du produit
+            $stmt = $db->prepare("SELECT supplier_price, selling_price FROM products WHERE id = ?");
+            $stmt->execute([$item['id']]);
+            $product = $stmt->fetch();
+            
+            if ($product) {
+                $profit_per_item = $product['selling_price'] - $product['supplier_price'];
+                $total_profit += $profit_per_item * $item['quantity'];
+            }
+        }
+        
+        $commission = $total_profit * ($commission_rate / 100);
                     
                     // Créer la vente
                     $stmt = $db->prepare("
@@ -727,7 +741,14 @@ $page_title = 'Caisse Enregistreuse';
             const totalDiscount = Math.max(loyaltyDiscount, businessDiscount);
             const total = subtotal - totalDiscount;
             const commissionRate = <?php echo ($user['role'] === 'CDI' || $user['role'] === 'Responsable' || $user['role'] === 'Patron') ? '20' : '10'; ?>;
-            const commission = total * (commissionRate / 100);
+            
+            // Calculer la commission sur le bénéfice, pas sur le total
+            let totalProfit = 0;
+            cart.forEach(item => {
+                const profit = (item.selling_price - item.supplier_price) * item.quantity;
+                totalProfit += profit;
+            });
+            const commission = totalProfit * (commissionRate / 100);
             
             // Mettre à jour l'affichage
             document.getElementById('subtotal').textContent = subtotal.toFixed(2) + '$';
