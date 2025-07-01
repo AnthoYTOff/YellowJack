@@ -175,16 +175,15 @@ if (!isset($config['prime_vente_percentage']) || $config['prime_vente_percentage
             $stmt = $db->prepare("
                 INSERT INTO weekly_performance 
                 (user_id, week_start, week_end, total_menages, total_salary_menage, total_hours_menage, 
-                 total_ventes, total_revenue, total_profit, total_commissions, prime_menage, prime_ventes, prime_totale, 
+                 total_ventes, total_revenue, total_commissions, prime_menage, prime_ventes, prime_totale, 
                  calculated_at, is_finalized) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
                 ON DUPLICATE KEY UPDATE
                     total_menages = VALUES(total_menages),
                     total_salary_menage = VALUES(total_salary_menage),
                     total_hours_menage = VALUES(total_hours_menage),
                     total_ventes = VALUES(total_ventes),
                     total_revenue = VALUES(total_revenue),
-                    total_profit = VALUES(total_profit),
                     total_commissions = VALUES(total_commissions),
                     prime_menage = VALUES(prime_menage),
                     prime_ventes = VALUES(prime_ventes),
@@ -197,8 +196,8 @@ if (!isset($config['prime_vente_percentage']) || $config['prime_vente_percentage
             $stmt->execute([
                 $employee['id'], $week_start, $week_end,
                 $cleaning_stats['total_menages'], $cleaning_stats['total_salary'], $cleaning_stats['total_hours'],
-                $sales_stats['total_ventes'], $sales_stats['total_revenue'], $sales_stats['total_profit'],
-                $sales_stats['total_commissions'], $prime_menage, $prime_ventes, $prime_totale, $is_finalized
+                $sales_stats['total_ventes'], $sales_stats['total_revenue'], $sales_stats['total_commissions'],
+                $prime_menage, $prime_ventes, $prime_totale, $is_finalized
             ]);
         }
         
@@ -258,7 +257,6 @@ $totals = [
     'total_salary_menage' => 0,
     'total_ventes' => 0,
     'total_revenue' => 0,
-    'total_profit' => 0,
     'prime_menage_total' => 0,
     'prime_ventes_total' => 0,
     'prime_totale_total' => 0
@@ -269,7 +267,6 @@ foreach ($performances as $perf) {
     $totals['total_salary_menage'] += $perf['total_salary_menage'];
     $totals['total_ventes'] += $perf['total_ventes'];
     $totals['total_revenue'] += $perf['total_revenue'];
-    $totals['total_profit'] += $perf['total_profit'] ?? 0;
     $totals['prime_menage_total'] += $perf['prime_menage'];
     $totals['prime_ventes_total'] += $perf['prime_ventes'];
     $totals['prime_totale_total'] += $perf['prime_totale'];
@@ -548,8 +545,7 @@ foreach ($performances as $perf) {
                                         <th class="text-center">Salaire Ménage</th>
                                         <th class="text-center">Ventes</th>
                                         <th class="text-center">CA Ventes</th>
-                                        <th class="text-center">Bénéfices</th>
-                                        <th class="text-center">Commissions</th>
+                                        <th class="text-center">Prime Ménage</th>
                                         <th class="text-center">Prime Ventes</th>
                                         <th class="text-center"><strong>Prime Totale</strong></th>
                                     </tr>
@@ -566,10 +562,9 @@ foreach ($performances as $perf) {
                                                 </span>
                                             </td>
                                             <td class="text-center"><?php echo number_format($perf['total_menages']); ?></td>
+                                            <td class="text-center"><?php echo number_format($perf['total_salary_menage'], 2); ?>€</td>
                                             <td class="text-center"><?php echo number_format($perf['total_ventes']); ?></td>
                                             <td class="text-center"><?php echo number_format($perf['total_revenue'], 2); ?>€</td>
-                                            <td class="text-center"><span class="text-success fw-bold"><?php echo number_format($perf['total_profit'] ?? 0, 2); ?>€</span></td>
-                                            <td class="text-center"><?php echo number_format($perf['total_commissions'], 2); ?>€</td>
                                             <td class="text-center text-success">
                                                 <strong><?php echo number_format($perf['prime_menage'], 2); ?>€</strong>
                                             </td>
@@ -586,10 +581,9 @@ foreach ($performances as $perf) {
                                     <tr>
                                         <th colspan="2">TOTAUX</th>
                                         <th class="text-center"><?php echo number_format($totals['total_menages']); ?></th>
+                                        <th class="text-center"><?php echo number_format($totals['total_salary_menage'], 2); ?>€</th>
                                         <th class="text-center"><?php echo number_format($totals['total_ventes']); ?></th>
                                         <th class="text-center"><?php echo number_format($totals['total_revenue'], 2); ?>€</th>
-                                        <th class="text-center"><span class="text-success fw-bold"><?php echo number_format($totals['total_profit'], 2); ?>€</span></th>
-                                        <th class="text-center"><?php echo number_format($totals['total_commissions'], 2); ?>€</th>
                                         <th class="text-center text-success">
                                             <strong><?php echo number_format($totals['prime_menage_total'], 2); ?>€</strong>
                                         </th>
