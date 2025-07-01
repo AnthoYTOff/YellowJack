@@ -68,7 +68,7 @@ try {
         ['prime_menage_per_unit', 2.00, 'Prime par ménage effectué (en €)'],
         ['prime_menage_bonus_threshold', 20, 'Seuil de ménages pour bonus (nombre)'],
         ['prime_menage_bonus_rate', 1.50, 'Bonus supplémentaire par ménage au-dessus du seuil (en €)'],
-        ['prime_vente_percentage', 0.05, 'Pourcentage de prime sur le CA ventes (5%)'],
+        ['prime_vente_percentage', 0.20, 'Pourcentage de prime sur le CA ventes (20%)'],
         ['prime_vente_bonus_threshold', 500.00, 'Seuil de CA pour bonus ventes (en €)'],
         ['prime_vente_bonus_rate', 0.02, 'Bonus supplémentaire au-dessus du seuil CA (2%)']
     ];

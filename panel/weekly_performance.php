@@ -150,10 +150,10 @@ if ($_POST && isset($_POST['calculate_performance'])) {
                 }
             }
             
-            // Prime ventes (basée sur le bénéfice) - 5% du CA
+            // Prime ventes (basée sur le bénéfice) - 20% du CA
             if ($sales_stats['total_profit'] > 0) {
-                // Utiliser directement 5% (0.05) pour la prime vente
-                $prime_ventes = $sales_stats['total_profit'] * 0.05;
+                // Utiliser directement 20% (0.20) pour la prime vente
+                $prime_ventes = $sales_stats['total_profit'] * 0.20;
                 
                 // Bonus si dépassement du seuil (basé sur le bénéfice)
                 if ($sales_stats['total_profit'] > $config['prime_vente_bonus_threshold']) {
