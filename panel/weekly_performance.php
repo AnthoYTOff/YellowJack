@@ -97,12 +97,18 @@ if ($_POST && isset($_POST['calculate_performance'])) {
             $stmt->execute([$employee['id'], $week_start, $week_end]);
             $cleaning_stats = $stmt->fetch();
             
-            // Calculer les statistiques ventes (vendredi à vendredi inclus)
+            // Calculer les statistiques ventes (vendredi à vendredi exclu)
             $stmt = $db->prepare("
                 SELECT 
                     COUNT(s.id) as total_ventes,
                     COALESCE(SUM(s.final_amount), 0) as total_revenue,
-                    COALESCE(SUM(s.employee_commission), 0) as total_commissions
+                    COALESCE(SUM(s.employee_commission), 0) as total_commissions,
+                    COALESCE(SUM(
+                        (SELECT SUM((p.selling_price - p.supplier_price) * si.quantity)
+                         FROM sale_items si 
+                         JOIN products p ON si.product_id = p.id 
+                         WHERE si.sale_id = s.id)
+                    ), 0) as total_profit
                 FROM sales s
                 WHERE s.user_id = ? 
                     AND DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
@@ -144,14 +150,14 @@ if ($_POST && isset($_POST['calculate_performance'])) {
                 }
             }
             
-            // Prime ventes
-            if ($sales_stats['total_revenue'] > 0) {
-                $prime_ventes = $sales_stats['total_revenue'] * $config['prime_vente_percentage'];
+            // Prime ventes (basée sur le bénéfice)
+            if ($sales_stats['total_profit'] > 0) {
+                $prime_ventes = $sales_stats['total_profit'] * $config['prime_vente_percentage'];
                 
-                // Bonus si dépassement du seuil
-                if ($sales_stats['total_revenue'] > $config['prime_vente_bonus_threshold']) {
-                    $bonus_ca = $sales_stats['total_revenue'] - $config['prime_vente_bonus_threshold'];
-                    $prime_ventes += $bonus_ca * $config['prime_vente_bonus_rate'];
+                // Bonus si dépassement du seuil (basé sur le bénéfice)
+                if ($sales_stats['total_profit'] > $config['prime_vente_bonus_threshold']) {
+                    $bonus_profit = $sales_stats['total_profit'] - $config['prime_vente_bonus_threshold'];
+                    $prime_ventes += $bonus_profit * $config['prime_vente_bonus_rate'];
                 }
             }
             

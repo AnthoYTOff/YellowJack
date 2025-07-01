@@ -44,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // Calculer le total et vérifier le stock
                     $total_amount = 0;
+                    $total_profit = 0;
                     $sale_items = [];
                     
                     foreach ($items as $item) {
@@ -66,7 +67,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                         
                         $item_total = $product['selling_price'] * $quantity;
+                        $item_profit = ($product['selling_price'] - $product['supplier_price']) * $quantity;
                         $total_amount += $item_total;
+                        $total_profit += $item_profit;
                         
                         $sale_items[] = [
                             'product' => $product,
@@ -123,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $commission_rate = 10; // 10% pour les autres rôles (CDD)
         }
         
-        $commission = $final_amount * ($commission_rate / 100);
+        $commission = $total_profit * ($commission_rate / 100);
                     
                     // Créer la vente
                     $stmt = $db->prepare("
@@ -727,7 +730,19 @@ $page_title = 'Caisse Enregistreuse';
             const totalDiscount = Math.max(loyaltyDiscount, businessDiscount);
             const total = subtotal - totalDiscount;
             const commissionRate = <?php echo ($user['role'] === 'CDI' || $user['role'] === 'Responsable' || $user['role'] === 'Patron') ? '20' : '10'; ?>;
-            const commission = total * (commissionRate / 100);
+            
+            // Calculer le bénéfice total
+            let totalProfit = 0;
+            products.forEach(product => {
+                const qtyInput = document.getElementById('qty_' + product.id);
+                const quantity = parseInt(qtyInput.value) || 0;
+                if (quantity > 0) {
+                    const profit = (parseFloat(product.selling_price) - parseFloat(product.supplier_price)) * quantity;
+                    totalProfit += profit;
+                }
+            });
+            
+            const commission = totalProfit * (commissionRate / 100);
             
             // Mettre à jour l'affichage
             document.getElementById('subtotal').textContent = subtotal.toFixed(2) + '$';
