@@ -66,11 +66,19 @@ if ($_POST && isset($_POST['calculate_performance'])) {
     try {
         // Récupérer la configuration des primes
         $stmt = $db->prepare("SELECT config_key, config_value FROM weekly_performance_config");
-        $stmt->execute();
-        $config = [];
-        while ($row = $stmt->fetch()) {
-            $config[$row['config_key']] = $row['config_value'];
-        }
+$stmt->execute();
+$config = [];
+while ($row = $stmt->fetch()) {
+    $config[$row['config_key']] = $row['config_value'];
+}
+
+// S'assurer que prime_vente_percentage est à 20% (0.20)
+if (!isset($config['prime_vente_percentage']) || $config['prime_vente_percentage'] != 0.20) {
+    $config['prime_vente_percentage'] = 0.20;
+    // Mettre à jour dans la base de données
+    $update_stmt = $db->prepare("INSERT INTO weekly_performance_config (config_key, config_value, description) VALUES ('prime_vente_percentage', 0.20, 'Pourcentage de prime sur les bénéfices de vente (20%)') ON DUPLICATE KEY UPDATE config_value = 0.20");
+    $update_stmt->execute();
+}
         
         // Récupérer tous les utilisateurs actifs (CDD, CDI, Responsable, Patron)
         $stmt = $db->prepare("
