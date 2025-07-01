@@ -6,11 +6,13 @@
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../config/database.php';
 
-// Vérifier l'authentification et les permissions
-requireLogin();
-requirePermission('cashier');
-
+// Vérifier les permissions
 $auth = getAuth();
+if (!$auth->hasPermission('CDI')) {
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Accès refusé. Permissions insuffisantes.']);
+    exit;
+}
 $user = $auth->getCurrentUser();
 $db = getDB();
 
