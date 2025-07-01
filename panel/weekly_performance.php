@@ -97,19 +97,15 @@ if ($_POST && isset($_POST['calculate_performance'])) {
             $stmt->execute([$employee['id'], $week_start, $week_end]);
             $cleaning_stats = $stmt->fetch();
             
-            // Calculer les statistiques ventes (vendredi à vendredi exclu)
+            // Calculer les statistiques ventes (vendredi à vendredi inclus)
             $stmt = $db->prepare("
                 SELECT 
                     COUNT(s.id) as total_ventes,
                     COALESCE(SUM(s.final_amount), 0) as total_revenue,
-                    COALESCE(SUM(si.quantity * (p.selling_price - p.supplier_price)), 0) as total_profit,
                     COALESCE(SUM(s.employee_commission), 0) as total_commissions
                 FROM sales s
-                LEFT JOIN sale_items si ON s.id = si.sale_id
-                LEFT JOIN products p ON si.product_id = p.id
                 WHERE s.user_id = ? 
-                    AND DATE(s.created_at) >= ? 
-                    AND DATE(s.created_at) < ?
+                    AND DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
             ");
             $stmt->execute([$employee['id'], $week_start, $week_end]);
             $sales_stats = $stmt->fetch();
@@ -150,7 +146,7 @@ if ($_POST && isset($_POST['calculate_performance'])) {
             
             // Prime ventes
             if ($sales_stats['total_revenue'] > 0) {
-                $prime_ventes = $sales_stats['total_profit'] * $config['prime_vente_percentage'];
+                $prime_ventes = $sales_stats['total_revenue'] * $config['prime_vente_percentage'];
                 
                 // Bonus si dépassement du seuil
                 if ($sales_stats['total_revenue'] > $config['prime_vente_bonus_threshold']) {
