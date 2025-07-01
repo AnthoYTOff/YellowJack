@@ -115,7 +115,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     
                     $final_amount = $total_amount - $discount_amount;
-                    $commission = $final_amount * (COMMISSION_RATE / 100);
+                    // Calcul de la commission selon le rôle de l'utilisateur
+        $commission_rate = 0;
+        if ($user['role'] === 'CDI' || $user['role'] === 'Responsable' || $user['role'] === 'Patron') {
+            $commission_rate = 20; // 20% pour CDI, Responsable et Patron
+        } else {
+            $commission_rate = 10; // 10% pour les autres rôles (CDD)
+        }
+        
+        $commission = $final_amount * ($commission_rate / 100);
                     
                     // Créer la vente
                     $stmt = $db->prepare("
@@ -602,7 +610,7 @@ $page_title = 'Caisse Enregistreuse';
                                             <span id="total">0.00$</span>
                                         </div>
                                         <div class="d-flex justify-content-between text-muted">
-                                            <span>Commission (<?php echo COMMISSION_RATE; ?>%):</span>
+                                            <span>Commission (<?php echo ($user['role'] === 'CDI' || $user['role'] === 'Responsable' || $user['role'] === 'Patron') ? '20' : '10'; ?>%):</span>
                                             <span id="commission">0.00$</span>
                                         </div>
                                     </div>
@@ -718,7 +726,8 @@ $page_title = 'Caisse Enregistreuse';
             // Prendre la réduction la plus élevée (non cumulable)
             const totalDiscount = Math.max(loyaltyDiscount, businessDiscount);
             const total = subtotal - totalDiscount;
-            const commission = total * (<?php echo COMMISSION_RATE; ?> / 100);
+            const commissionRate = <?php echo ($user['role'] === 'CDI' || $user['role'] === 'Responsable' || $user['role'] === 'Patron') ? '20' : '10'; ?>;
+            const commission = total * (commissionRate / 100);
             
             // Mettre à jour l'affichage
             document.getElementById('subtotal').textContent = subtotal.toFixed(2) + '$';
