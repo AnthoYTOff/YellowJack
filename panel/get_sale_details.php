@@ -3,8 +3,8 @@
  * API pour récupérer les détails d'une vente
  */
 
-require_once '../includes/auth.php';
-require_once '../config/database.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../config/database.php';
 
 // Vérifier l'authentification et les permissions
 requireLogin();
