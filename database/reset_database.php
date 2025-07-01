@@ -49,7 +49,7 @@ try {
     $db->exec("
         INSERT INTO system_settings (setting_key, setting_value, description) VALUES
         ('cleaning_rate', '60', 'Tarif par ménage en dollars'),
-        ('commission_rate', '25', 'Pourcentage de commission pour les CDI'),
+        ('commission_rate', '20', 'Pourcentage de commission pour les CDI, Responsable et Patron'),
         ('discord_webhook_url', '', 'URL du webhook Discord pour les tickets'),
         ('bar_name', 'Le Yellowjack', 'Nom du bar'),
         ('bar_address', 'Nord de Los Santos, près de Sandy Shore', 'Adresse du bar'),
