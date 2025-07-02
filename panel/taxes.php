@@ -48,42 +48,34 @@ function getFridayAfterFriday($friday) {
     return date('Y-m-d', strtotime('+7 days', strtotime($friday)));
 }
 
-// Fonction pour calculer les impôts selon le barème progressif
+// Fonction pour calculer les impôts selon le système de paliers
 function calculateTax($revenue, $db) {
-    // Récupérer les tranches d'impôts
-    $stmt = $db->query("SELECT * FROM tax_brackets ORDER BY min_revenue ASC");
+    // Récupérer les paliers d'impôts
+    $stmt = $db->query("SELECT * FROM tax_brackets ORDER BY min_revenue DESC");
     $brackets = $stmt->fetchAll();
     
     $totalTax = 0;
     $breakdown = [];
-    $remainingRevenue = $revenue;
+    $applicableTaxRate = 0;
     
+    // Trouver le palier applicable (le plus élevé où le revenu dépasse le minimum)
     foreach ($brackets as $bracket) {
-        if ($remainingRevenue <= 0) break;
-        
         $minRevenue = $bracket['min_revenue'];
-        $maxRevenue = $bracket['max_revenue'] ?? PHP_FLOAT_MAX;
-        $taxRate = $bracket['tax_rate'] / 100;
+        $maxRevenue = $bracket['max_revenue'];
         
-        // Vérifier si le revenu entre dans cette tranche
-        if ($revenue > $minRevenue) {
-            // Calculer le montant imposable dans cette tranche
-            $upperLimit = $bracket['max_revenue'] ? min($bracket['max_revenue'], $revenue) : $revenue;
-            $taxableAmount = $upperLimit - $minRevenue;
+        // Vérifier si le revenu entre dans ce palier
+        if ($revenue >= $minRevenue && ($maxRevenue === null || $revenue <= $maxRevenue)) {
+            $applicableTaxRate = $bracket['tax_rate'] / 100;
+            $totalTax = $revenue * $applicableTaxRate;
             
-            // S'assurer que le montant imposable est positif
-            if ($taxableAmount > 0) {
-                $taxForBracket = $taxableAmount * $taxRate;
-                $totalTax += $taxForBracket;
-                
-                $breakdown[] = [
-                    'min_revenue' => $minRevenue,
-                    'max_revenue' => $bracket['max_revenue'],
-                    'taxable_amount' => $taxableAmount,
-                    'tax_rate' => $bracket['tax_rate'],
-                    'tax_amount' => $taxForBracket
-                ];
-            }
+            $breakdown[] = [
+                'min_revenue' => $minRevenue,
+                'max_revenue' => $bracket['max_revenue'],
+                'taxable_amount' => $revenue,
+                'tax_rate' => $bracket['tax_rate'],
+                'tax_amount' => $totalTax
+            ];
+            break;
         }
     }
     
