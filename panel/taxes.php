@@ -65,12 +65,13 @@ function calculateTax($revenue, $db) {
         $maxRevenue = $bracket['max_revenue'] ?? PHP_FLOAT_MAX;
         $taxRate = $bracket['tax_rate'] / 100;
         
+        // Vérifier si le revenu entre dans cette tranche
         if ($revenue > $minRevenue) {
-            $taxableAmount = min($remainingRevenue, $maxRevenue - $minRevenue + 1);
-            if ($revenue <= $maxRevenue || $bracket['max_revenue'] === null) {
-                $taxableAmount = min($taxableAmount, $revenue - $minRevenue);
-            }
+            // Calculer le montant imposable dans cette tranche
+            $upperLimit = $bracket['max_revenue'] ? min($bracket['max_revenue'], $revenue) : $revenue;
+            $taxableAmount = $upperLimit - $minRevenue;
             
+            // S'assurer que le montant imposable est positif
             if ($taxableAmount > 0) {
                 $taxForBracket = $taxableAmount * $taxRate;
                 $totalTax += $taxForBracket;
@@ -82,8 +83,6 @@ function calculateTax($revenue, $db) {
                     'tax_rate' => $bracket['tax_rate'],
                     'tax_amount' => $taxForBracket
                 ];
-                
-                $remainingRevenue -= $taxableAmount;
             }
         }
     }
