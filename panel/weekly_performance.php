@@ -142,12 +142,9 @@ if ($_POST && isset($_POST['calculate_performance'])) {
                 
                 $prime_menage = $total_salary_menage * $prime_percentage;
                 
-                // Bonus si dépassement du seuil (uniquement pour CDD)
-                if ($employee['role'] === 'CDD' && $cleaning_stats['total_menages'] > $config['prime_menage_bonus_threshold']) {
-                    $bonus_menages = $cleaning_stats['total_menages'] - $config['prime_menage_bonus_threshold'];
-                    $prime_menage += $bonus_menages * $config['prime_menage_bonus_rate'];
-                }
-                // Pour CDI, Responsable et Patron: exactement 36% du salaire ménage, pas de bonus
+                // Pas de bonus - pourcentages fixes :
+                // CDD: exactement 30% du salaire ménage
+                // CDI, Responsable et Patron: exactement 36% du salaire ménage
             }
             
             // Prime ventes (basée sur le CA total) - 20% du CA exactement
