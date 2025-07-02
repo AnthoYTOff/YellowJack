@@ -115,14 +115,29 @@ if (isset($_GET['success']) && $_GET['success'] == '1') {
 if ($_POST && isset($_POST['calculate_taxes'])) {
     try {
         // Calculer le CA total de la semaine (vendredi à vendredi inclus)
+        // CA = Ventes + Salaire ménage
         $stmt = $db->prepare("
-            SELECT COALESCE(SUM(final_amount), 0) as total_revenue
-            FROM sales 
-            WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?
+            SELECT 
+                COALESCE(SUM(s.final_amount), 0) as sales_revenue,
+                COALESCE(SUM(cs.total_salary), 0) as cleaning_revenue
+            FROM 
+                (SELECT final_amount FROM sales WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?) s
+            CROSS JOIN
+                (SELECT total_salary FROM cleaning_services WHERE DATE(start_time) >= ? AND DATE(start_time) <= ? AND status = 'completed') cs
         ");
-        $stmt->execute([$week_start, $week_end]);
+        $stmt->execute([$week_start, $week_end, $week_start, $week_end]);
         $result = $stmt->fetch();
-        $total_revenue = $result['total_revenue'];
+        
+        // Calculer séparément pour éviter les problèmes de jointure
+        $stmt_sales = $db->prepare("SELECT COALESCE(SUM(final_amount), 0) as sales_revenue FROM sales WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?");
+        $stmt_sales->execute([$week_start, $week_end]);
+        $sales_result = $stmt_sales->fetch();
+        
+        $stmt_cleaning = $db->prepare("SELECT COALESCE(SUM(total_salary), 0) as cleaning_revenue FROM cleaning_services WHERE DATE(start_time) >= ? AND DATE(start_time) <= ? AND status = 'completed'");
+        $stmt_cleaning->execute([$week_start, $week_end]);
+        $cleaning_result = $stmt_cleaning->fetch();
+        
+        $total_revenue = $sales_result['sales_revenue'] + $cleaning_result['cleaning_revenue'];
         
         // Calculer les impôts
         $tax_calculation = calculateTax($total_revenue, $db);
@@ -218,16 +233,20 @@ try {
 }
 
 // Récupérer le CA de la semaine courante (vendredi à vendredi inclus)
+// CA = Ventes + Salaire ménage
 $current_revenue = 0;
 try {
-    $stmt = $db->prepare("
-        SELECT COALESCE(SUM(final_amount), 0) as total_revenue
-        FROM sales 
-        WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?
-    ");
-    $stmt->execute([$week_start, $week_end]);
-    $result = $stmt->fetch();
-    $current_revenue = $result['total_revenue'];
+    // Calculer les ventes
+    $stmt_sales = $db->prepare("SELECT COALESCE(SUM(final_amount), 0) as sales_revenue FROM sales WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?");
+    $stmt_sales->execute([$week_start, $week_end]);
+    $sales_result = $stmt_sales->fetch();
+    
+    // Calculer le salaire ménage
+    $stmt_cleaning = $db->prepare("SELECT COALESCE(SUM(total_salary), 0) as cleaning_revenue FROM cleaning_services WHERE DATE(start_time) >= ? AND DATE(start_time) <= ? AND status = 'completed'");
+    $stmt_cleaning->execute([$week_start, $week_end]);
+    $cleaning_result = $stmt_cleaning->fetch();
+    
+    $current_revenue = $sales_result['sales_revenue'] + $cleaning_result['cleaning_revenue'];
 } catch (Exception $e) {
     // Revenue à 0 en cas d'erreur
 }
