@@ -72,27 +72,31 @@ function getNextWeekPeriod($current_end) {
 
 /**
  * Obtenir la semaine active (non finalisée)
- * Utilise la période fixe du 27/03/2025 au 04/07/2025
+ * Crée automatiquement une nouvelle semaine si aucune ne couvre la date actuelle
  * @return array|null Données de la semaine active ou null si erreur
  */
 function getActiveWeek() {
     try {
         $db = getDB();
+        $today = date('Y-m-d');
         
-        // Chercher une semaine non finalisée
-        $stmt = $db->query("SELECT * FROM weekly_taxes WHERE is_finalized = FALSE ORDER BY week_start DESC LIMIT 1");
+        // Chercher une semaine non finalisée qui couvre la date actuelle
+        $stmt = $db->prepare("SELECT * FROM weekly_taxes WHERE is_finalized = FALSE AND ? >= week_start AND ? <= week_end ORDER BY week_start DESC LIMIT 1");
+        $stmt->execute([$today, $today]);
         $activeWeek = $stmt->fetch();
         
         if ($activeWeek) {
             return $activeWeek;
         }
         
-        // Aucune semaine active trouvée, créer la période fixe actuelle
-        $currentPeriod = getCurrentWeekPeriod();
+        // Aucune semaine active ne couvre aujourd'hui, créer une nouvelle semaine
+        // Commencer par la date actuelle et créer une semaine de 7 jours
+        $weekStart = $today;
+        $weekEnd = date('Y-m-d', strtotime($today . ' +6 days'));
         
         // Vérifier si cette période existe déjà
         $stmt = $db->prepare("SELECT * FROM weekly_taxes WHERE week_start = ?");
-        $stmt->execute([$currentPeriod['week_start']]);
+        $stmt->execute([$weekStart]);
         $existingWeek = $stmt->fetch();
         
         if ($existingWeek) {
@@ -105,11 +109,11 @@ function getActiveWeek() {
             VALUES (?, ?, 0, 0, 0, '[]', FALSE)
         ");
         
-        $stmt->execute([$currentPeriod['week_start'], $currentPeriod['week_end']]);
+        $stmt->execute([$weekStart, $weekEnd]);
         
         // Récupérer la semaine créée
         $stmt = $db->prepare("SELECT * FROM weekly_taxes WHERE week_start = ?");
-        $stmt->execute([$currentPeriod['week_start']]);
+        $stmt->execute([$weekStart]);
         
         return $stmt->fetch();
         
