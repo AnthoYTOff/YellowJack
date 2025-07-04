@@ -231,13 +231,12 @@ try {
     ");
     $available_weeks = $stmt->fetchAll(PDO::FETCH_COLUMN);
     
-    // Ajouter la semaine courante si elle n'existe pas
-    $current_week = getFridayOfWeek(date('Y-m-d'));
-    if (!in_array($current_week, $available_weeks)) {
-        array_unshift($available_weeks, $current_week);
+    // Ajouter la semaine active si elle n'existe pas
+    if ($activeWeek && !in_array($activeWeek['week_start'], $available_weeks)) {
+        array_unshift($available_weeks, $activeWeek['week_start']);
     }
 } catch (Exception $e) {
-    $available_weeks = [getFridayOfWeek(date('Y-m-d'))];
+    $available_weeks = $activeWeek ? [$activeWeek['week_start']] : [];
 }
 
 // Récupérer le CA de la semaine courante (vendredi à vendredi inclus)

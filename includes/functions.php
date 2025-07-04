@@ -9,6 +9,38 @@
 require_once __DIR__ . '/../config/database.php';
 
 /**
+ * Obtenir le vendredi de la semaine pour une date donnée (pour compatibilité)
+ * @param string $date Date au format Y-m-d
+ * @return string Date du vendredi au format Y-m-d
+ */
+function getFridayOfWeek($date) {
+    $timestamp = strtotime($date);
+    $dayOfWeek = date('N', $timestamp); // 1 = Lundi, 7 = Dimanche
+    
+    if ($dayOfWeek == 5) {
+        // C'est déjà vendredi
+        return date('Y-m-d', $timestamp);
+    } elseif ($dayOfWeek < 5) {
+        // Avant vendredi, aller au vendredi de cette semaine
+        $daysToAdd = 5 - $dayOfWeek;
+        return date('Y-m-d', strtotime("+$daysToAdd days", $timestamp));
+    } else {
+        // Weekend, aller au vendredi suivant
+        $daysToAdd = 12 - $dayOfWeek; // 7 jours + (5 - dayOfWeek)
+        return date('Y-m-d', strtotime("+$daysToAdd days", $timestamp));
+    }
+}
+
+/**
+ * Obtenir le vendredi suivant après un vendredi donné (pour compatibilité)
+ * @param string $friday Date du vendredi au format Y-m-d
+ * @return string Date du vendredi suivant au format Y-m-d
+ */
+function getFridayAfterFriday($friday) {
+    return date('Y-m-d', strtotime('+7 days', strtotime($friday)));
+}
+
+/**
  * Obtenir la semaine active actuelle (du 27/03/2025 au 04/07/2025 par défaut)
  * @return array Tableau avec week_start et week_end
  */
