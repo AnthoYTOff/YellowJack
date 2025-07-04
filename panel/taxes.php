@@ -9,17 +9,21 @@
  */
 
 require_once __DIR__ . '/../config/database.php';
-require_once '../includes/auth.php';
-require_once '../includes/functions.php';
-requireLogin();
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
 
-$auth = getAuth();
+$auth = new Auth();
+if (!$auth->isLoggedIn()) {
+    header('Location: ../index.php');
+    exit();
+}
+
 $user = $auth->getCurrentUser();
 $db = getDB();
 
-// Vérifier que l'utilisateur est Patron
-if (!$auth->hasPermission('Patron')) {
-    header('Location: dashboard.php');
+// Vérifier les permissions
+if (!in_array($user['role'], ['Patron', 'Responsable'])) {
+    header('Location: ../index.php');
     exit();
 }
 
