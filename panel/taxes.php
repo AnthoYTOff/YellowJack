@@ -172,7 +172,7 @@ if ($_POST && isset($_POST['finalize_week'])) {
         $stmt->execute([$week_start]);
         
         // Créer la nouvelle période
-        $nextPeriod = getNextWeekPeriod();
+        $nextPeriod = getNextWeekPeriod($week_end);
         
         // Vérifier si la nouvelle période n'existe pas déjà
         $checkStmt = $db->prepare("SELECT * FROM weekly_taxes WHERE week_start = ?");
