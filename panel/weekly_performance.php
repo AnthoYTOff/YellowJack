@@ -177,7 +177,8 @@ if ($_POST && isset($_POST['calculate_performance'])) {
                     calculated_at = NOW()
             ");
             
-            $is_finalized = (date('Y-m-d') > $week_end) ? 1 : 0;
+            // La finalisation doit être faite manuellement - pas de finalisation automatique
+            $is_finalized = 0;
             
             $stmt->execute([
                 $employee['id'], $week_start, $week_end,

@@ -48,19 +48,24 @@ try {
         exit(1);
     }
     
-    // Finaliser les performances de la semaine précédente
+    // Note: La finalisation des performances doit être faite manuellement via l'interface
+    // La finalisation automatique a été désactivée pour nécessiter une confirmation manuelle
     $previous_week_start = date('Y-m-d', strtotime('-7 days', strtotime($today)));
     $previous_week_end = getFridayAfterFriday($previous_week_start);
     
+    // Vérifier s'il y a des performances non finalisées de la semaine précédente
     $stmt = $db->prepare("
-        UPDATE weekly_performance 
-        SET is_finalized = 1, finalized_at = NOW() 
+        SELECT COUNT(*) as count FROM weekly_performance 
         WHERE week_start = ? AND is_finalized = 0
     ");
     $stmt->execute([$previous_week_start]);
-    $finalized_count = $stmt->rowCount();
+    $unfinalized_count = $stmt->fetch()['count'];
     
-    error_log("[" . date('Y-m-d H:i:s') . "] Finalisé $finalized_count performances pour la semaine du $previous_week_start");
+    if ($unfinalized_count > 0) {
+        error_log("[" . date('Y-m-d H:i:s') . "] ATTENTION: $unfinalized_count performances non finalisées pour la semaine du $previous_week_start - Finalisation manuelle requise");
+    }
+    
+    $finalized_count = 0; // Aucune finalisation automatique
     
     // Calculer automatiquement les performances pour la nouvelle semaine
     // (optionnel - peut être fait manuellement par les patrons)
