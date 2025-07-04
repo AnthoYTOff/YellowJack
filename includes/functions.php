@@ -62,7 +62,7 @@ function getNextWeekPeriod($current_end) {
     $start_date->add(new DateInterval('P1D')); // Jour suivant
     
     $end_date = clone $start_date;
-    $end_date->add(new DateInterval('P99D')); // Période de ~3 mois
+    $end_date->add(new DateInterval('P6D')); // Période de 7 jours (6 jours + le jour de début)
     
     return [
         'week_start' => $start_date->format('Y-m-d'),
