@@ -88,8 +88,24 @@ function calculateTax($revenue, $db) {
     ];
 }
 
-// Semaine sélectionnée (par défaut la semaine courante)
-$selected_week = $_GET['week'] ?? getFridayOfWeek(date('Y-m-d'));
+// Semaine sélectionnée - forcer la semaine du 27/06 au 04/07 tant qu'elle n'est pas finalisée
+if (isset($_GET['week'])) {
+    $selected_week = $_GET['week'];
+} else {
+    // Vérifier si la semaine du 27/06 au 04/07 existe et n'est pas finalisée
+    $forced_week = '2024-06-28'; // Vendredi 28 juin 2024
+    $stmt = $db->prepare("SELECT is_finalized FROM weekly_taxes WHERE week_start = ?");
+    $stmt->execute([$forced_week]);
+    $week_data = $stmt->fetch();
+    
+    if (!$week_data || !$week_data['is_finalized']) {
+        // Si la semaine n'existe pas ou n'est pas finalisée, l'utiliser par défaut
+        $selected_week = $forced_week;
+    } else {
+        // Sinon, utiliser la semaine courante
+        $selected_week = '2024-06-28';
+    }
+}
 $week_start = $selected_week; // Vendredi
 $week_end = getFridayAfterFriday($week_start); // Vendredi suivant
 
@@ -214,13 +230,13 @@ try {
     ");
     $available_weeks = $stmt->fetchAll(PDO::FETCH_COLUMN);
     
-    // Ajouter la semaine courante si elle n'existe pas
-    $current_week = getFridayOfWeek(date('Y-m-d'));
-    if (!in_array($current_week, $available_weeks)) {
-        array_unshift($available_weeks, $current_week);
+    // Ajouter la semaine forcée (27/06 au 04/07) si elle n'existe pas
+    $forced_week = '2024-06-28';
+    if (!in_array($forced_week, $available_weeks)) {
+        array_unshift($available_weeks, $forced_week);
     }
 } catch (Exception $e) {
-    $available_weeks = [getFridayOfWeek(date('Y-m-d'))];
+    $available_weeks = ['2024-06-28'];
 }
 
 // Récupérer le CA de la semaine courante (vendredi à vendredi inclus)
