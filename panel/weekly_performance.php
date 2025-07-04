@@ -47,24 +47,8 @@ function getFridayAfterFriday($friday) {
     return date('Y-m-d', strtotime('+7 days', strtotime($friday)));
 }
 
-// Semaine sélectionnée - forcer la semaine du 27/06 au 04/07 tant qu'elle n'est pas finalisée
-if (isset($_GET['week'])) {
-    $selected_week = $_GET['week'];
-} else {
-    // Vérifier si la semaine du 27/06 au 04/07 existe et n'est pas finalisée
-    $forced_week = '2024-06-28'; // Vendredi 28 juin 2024
-    $stmt = $db->prepare("SELECT is_finalized FROM weekly_performance WHERE week_start = ? LIMIT 1");
-    $stmt->execute([$forced_week]);
-    $week_data = $stmt->fetch();
-    
-    if (!$week_data || !$week_data['is_finalized']) {
-        // Si la semaine n'existe pas ou n'est pas finalisée, l'utiliser par défaut
-        $selected_week = $forced_week;
-    } else {
-        // Sinon, utiliser la semaine courante
-        $selected_week = '2024-06-28';
-    }
-}
+// Semaine sélectionnée (par défaut la semaine courante)
+$selected_week = $_GET['week'] ?? getFridayOfWeek(date('Y-m-d'));
 $week_start = $selected_week; // Vendredi
 $week_end = getFridayAfterFriday($week_start); // Vendredi suivant
 
@@ -245,13 +229,13 @@ try {
     $stmt->execute();
     $available_weeks = $stmt->fetchAll(PDO::FETCH_COLUMN);
     
-    // Ajouter la semaine forcée (27/06 au 04/07) si elle n'existe pas
-    $forced_week = '2024-06-28';
-    if (!in_array($forced_week, $available_weeks)) {
-        array_unshift($available_weeks, $forced_week);
+    // Ajouter la semaine courante si elle n'existe pas
+    $current_week = getFridayOfWeek(date('Y-m-d'));
+    if (!in_array($current_week, $available_weeks)) {
+        array_unshift($available_weeks, $current_week);
     }
 } catch (Exception $e) {
-    $available_weeks = ['2024-06-28'];
+    $available_weeks = [getFridayOfWeek(date('Y-m-d'))];
 }
 
 // Calculer les totaux
@@ -459,7 +443,7 @@ foreach ($performances as $perf) {
                                         <?php 
                                         $week_end_display = getFridayAfterFriday($week);
                                         echo date('d/m/Y', strtotime($week)) . ' - ' . date('d/m/Y', strtotime($week_end_display)) . ' (inclus)';
-                                        if ($week === '2024-06-28') {
+                                        if ($week === getFridayOfWeek(date('Y-m-d'))) {
                                             echo ' (Semaine courante)';
                                         }
                                         ?>
