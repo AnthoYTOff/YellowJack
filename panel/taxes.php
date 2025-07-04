@@ -70,9 +70,24 @@ function calculateTax($revenue, $db) {
 }
 
 // Semaine sélectionnée (par défaut la semaine courante)
-$selected_week = $_GET['week'] ?? getFridayOfWeek(date('Y-m-d'));
-$week_start = $selected_week; // Vendredi
-$week_end = getFridayAfterFriday($week_start); // Vendredi suivant
+$activeWeek = getActiveWeek();
+if (isset($_GET['week'])) {
+    $selected_week = $_GET['week'];
+    $stmt = $db->prepare("SELECT * FROM weekly_taxes WHERE week_start = ?");
+    $stmt->execute([$selected_week]);
+    $weekData = $stmt->fetch();
+    if ($weekData) {
+        $week_start = $weekData['week_start'];
+        $week_end = $weekData['week_end'];
+    } else {
+        $week_start = $activeWeek['week_start'];
+        $week_end = $activeWeek['week_end'];
+    }
+} else {
+    $week_start = $activeWeek['week_start'];
+    $week_end = $activeWeek['week_end'];
+    $selected_week = $week_start;
+}
 
 // Messages
 $success_message = '';
@@ -156,28 +171,26 @@ if ($_POST && isset($_POST['finalize_week'])) {
         ");
         $stmt->execute([$week_start]);
         
-        // Créer automatiquement une nouvelle semaine qui commence maintenant
-        $new_week_start = date('Y-m-d'); // La nouvelle semaine commence aujourd'hui
-        $new_week_end = date('Y-m-d', strtotime('+6 days')); // Et se termine dans 6 jours
+        // Créer la nouvelle période
+        $nextPeriod = getNextWeekPeriod();
         
-        // Vérifier si la nouvelle semaine n'existe pas déjà
-        $check_stmt = $db->prepare("SELECT COUNT(*) FROM weekly_taxes WHERE week_start = ?");
-        $check_stmt->execute([$new_week_start]);
+        // Vérifier si la nouvelle période n'existe pas déjà
+        $checkStmt = $db->prepare("SELECT * FROM weekly_taxes WHERE week_start = ?");
+        $checkStmt->execute([$nextPeriod['week_start']]);
+        $existingNext = $checkStmt->fetch();
         
-        if ($check_stmt->fetchColumn() == 0) {
-            // Créer la nouvelle semaine avec des valeurs initiales à zéro
-            $create_stmt = $db->prepare("
-                INSERT INTO weekly_taxes 
-                (week_start, week_end, total_revenue, total_tax, effective_rate, tax_breakdown, is_finalized) 
+        if (!$existingNext) {
+            $createStmt = $db->prepare("
+                INSERT INTO weekly_taxes (week_start, week_end, total_revenue, tax_amount, effective_tax_rate, tax_breakdown, is_finalized) 
                 VALUES (?, ?, 0, 0, 0, '[]', FALSE)
             ");
-            $create_stmt->execute([$new_week_start, $new_week_end]);
+            $createStmt->execute([$nextPeriod['week_start'], $nextPeriod['week_end']]);
         }
         
-        $success_message = "Semaine finalisée avec succès. Nouvelle semaine créée automatiquement.";
+        $success_message = "Semaine du " . date('d/m/Y', strtotime($week_start)) . " finalisée avec succès. Nouvelle période créée du " . date('d/m/Y', strtotime($nextPeriod['week_start'])) . " au " . date('d/m/Y', strtotime($nextPeriod['week_end'])) . ".";
         
-        // Rediriger vers la nouvelle semaine
-        header("Location: taxes.php?week=" . urlencode($new_week_start) . "&success=1");
+        // Rediriger vers la nouvelle semaine active
+        header("Location: taxes.php?week=" . urlencode($nextPeriod['week_start']) . "&success=1");
         exit();
         
     } catch (Exception $e) {
