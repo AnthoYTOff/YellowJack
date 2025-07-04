@@ -8,6 +8,7 @@
 
 require_once '../includes/auth.php';
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 // Vérifier l'authentification
 requireLogin();
@@ -50,6 +51,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'start_service':
                 if (!$current_session) {
                     try {
+                        // Vérifier qu'il y a une semaine active pour enregistrer le service
+                        $activeWeek = getActiveWeek();
+                        if (!$activeWeek) {
+                            throw new Exception('Aucune semaine active trouvée. Veuillez contacter un administrateur.');
+                        }
+                        
                         $stmt = $db->prepare("INSERT INTO cleaning_services (user_id, start_time) VALUES (?, ?)");
                         $stmt->execute([$user['id'], getCurrentDateTime()]);
                         $message = 'Service démarré avec succès !';
@@ -58,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         header('Location: cleaning.php?success=1&message=' . urlencode($message));
                         exit;
                     } catch (Exception $e) {
-                        $error = 'Erreur lors du démarrage du service.';
+                        $error = 'Erreur lors du démarrage du service: ' . $e->getMessage();
                     }
                 } else {
                     $error = 'Un service est déjà en cours.';

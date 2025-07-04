@@ -10,6 +10,7 @@
 
 require_once __DIR__ . '/../config/database.php';
 require_once '../includes/auth.php';
+require_once '../includes/functions.php';
 requireLogin();
 
 $auth = getAuth();
@@ -23,30 +24,6 @@ if (!$auth->hasPermission('Patron')) {
 }
 
 $page_title = 'Gestion des Impôts';
-
-// Fonction pour obtenir le vendredi de début de la semaine courante (vendredi à vendredi inclus)
-function getFridayOfWeek($date) {
-    $timestamp = strtotime($date);
-    $dayOfWeek = date('N', $timestamp); // 1 = Lundi, 5 = Vendredi
-    
-    if ($dayOfWeek == 5) {
-        // Si c'est vendredi, c'est le début de la semaine
-        return date('Y-m-d', $timestamp);
-    } elseif ($dayOfWeek == 6 || $dayOfWeek == 7) {
-        // Si c'est samedi ou dimanche, prendre le vendredi précédent
-        $daysToSubtract = $dayOfWeek - 5;
-        return date('Y-m-d', strtotime("-$daysToSubtract days", $timestamp));
-    } else {
-        // Si c'est lundi à jeudi, prendre le vendredi précédent
-    $daysToSubtract = $dayOfWeek + 2; // lundi=3, mardi=4, mercredi=5, jeudi=6 (logique vendredi-vendredi inclus)
-        return date('Y-m-d', strtotime("-$daysToSubtract days", $timestamp));
-    }
-}
-
-// Fonction pour obtenir le vendredi suivant (fin de semaine)
-function getFridayAfterFriday($friday) {
-    return date('Y-m-d', strtotime('+7 days', strtotime($friday)));
-}
 
 // Fonction pour calculer les impôts selon le système de paliers
 function calculateTax($revenue, $db) {

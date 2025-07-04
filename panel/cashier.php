@@ -13,6 +13,7 @@ error_reporting(E_ALL);
 
 require_once '../includes/auth.php';
 require_once '../config/database.php';
+require_once '../includes/functions.php';
 
 // Vérifier l'authentification et les permissions
 requireLogin();
@@ -40,6 +41,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'Aucun produit sélectionné.';
             } else {
                 try {
+                    // Vérifier qu'il y a une semaine active pour enregistrer la vente
+                    $activeWeek = getActiveWeek();
+                    if (!$activeWeek) {
+                        throw new Exception('Aucune semaine active trouvée. Veuillez contacter un administrateur.');
+                    }
+                    
                     $db->beginTransaction();
                     
                     // Calculer le total et vérifier le stock
