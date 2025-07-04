@@ -167,6 +167,7 @@ if ($_POST && isset($_POST['calculate_taxes'])) {
 // Action de finalisation
 if ($_POST && isset($_POST['finalize_week'])) {
     try {
+        // Finaliser la semaine actuelle
         $stmt = $db->prepare("
             UPDATE weekly_taxes 
             SET is_finalized = TRUE, finalized_at = CURRENT_TIMESTAMP 
@@ -174,7 +175,29 @@ if ($_POST && isset($_POST['finalize_week'])) {
         ");
         $stmt->execute([$week_start]);
         
-        $success_message = "Semaine finalisée avec succès.";
+        // Créer automatiquement une nouvelle semaine qui commence maintenant
+        $new_week_start = date('Y-m-d'); // La nouvelle semaine commence aujourd'hui
+        $new_week_end = date('Y-m-d', strtotime('+6 days')); // Et se termine dans 6 jours
+        
+        // Vérifier si la nouvelle semaine n'existe pas déjà
+        $check_stmt = $db->prepare("SELECT COUNT(*) FROM weekly_taxes WHERE week_start = ?");
+        $check_stmt->execute([$new_week_start]);
+        
+        if ($check_stmt->fetchColumn() == 0) {
+            // Créer la nouvelle semaine avec des valeurs initiales à zéro
+            $create_stmt = $db->prepare("
+                INSERT INTO weekly_taxes 
+                (week_start, week_end, total_revenue, total_tax, effective_rate, tax_breakdown, is_finalized) 
+                VALUES (?, ?, 0, 0, 0, '[]', FALSE)
+            ");
+            $create_stmt->execute([$new_week_start, $new_week_end]);
+        }
+        
+        $success_message = "Semaine finalisée avec succès. Nouvelle semaine créée automatiquement.";
+        
+        // Rediriger vers la nouvelle semaine
+        header("Location: taxes.php?week=" . urlencode($new_week_start) . "&success=1");
+        exit();
         
     } catch (Exception $e) {
         $error_message = "Erreur lors de la finalisation : " . $e->getMessage();
