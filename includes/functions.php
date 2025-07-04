@@ -89,10 +89,22 @@ function getActiveWeek() {
             return $activeWeek;
         }
         
-        // Aucune semaine active ne couvre aujourd'hui, créer une nouvelle semaine
-        // Commencer par la date actuelle et créer une semaine de 7 jours
-        $weekStart = $today;
-        $weekEnd = date('Y-m-d', strtotime($today . ' +6 days'));
+        // Aucune semaine active ne couvre aujourd'hui
+        // Chercher la dernière semaine finalisée pour créer la suivante
+        $stmt = $db->prepare("SELECT * FROM weekly_taxes WHERE is_finalized = TRUE ORDER BY week_end DESC LIMIT 1");
+        $stmt->execute();
+        $lastFinalizedWeek = $stmt->fetch();
+        
+        if ($lastFinalizedWeek) {
+            // Utiliser getNextWeekPeriod pour créer la semaine suivante
+            $nextPeriod = getNextWeekPeriod($lastFinalizedWeek['week_end']);
+            $weekStart = $nextPeriod['week_start'];
+            $weekEnd = $nextPeriod['week_end'];
+        } else {
+            // Aucune semaine finalisée, commencer par aujourd'hui
+            $weekStart = $today;
+            $weekEnd = date('Y-m-d', strtotime($today . ' +6 days'));
+        }
         
         // Vérifier si cette période existe déjà
         $stmt = $db->prepare("SELECT * FROM weekly_taxes WHERE week_start = ?");
