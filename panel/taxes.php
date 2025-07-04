@@ -501,6 +501,120 @@ try {
                     </div>
                 </div>
                 
+                <!-- Détails des ventes et ménages de la semaine -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-list me-2"></i>
+                                    Détails des revenus de la semaine
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="text-primary"><i class="fas fa-shopping-cart me-2"></i>Ventes</h6>
+                                        <?php
+                                        try {
+                                            $stmt_sales_details = $db->prepare("
+                                                SELECT s.*, u.first_name, u.last_name, c.name as customer_name
+                                                FROM sales s
+                                                LEFT JOIN users u ON s.user_id = u.id
+                                                LEFT JOIN customers c ON s.customer_id = c.id
+                                                WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+                                                ORDER BY s.created_at DESC
+                                                LIMIT 10
+                                            ");
+                                            $stmt_sales_details->execute([$week_start, $week_end]);
+                                            $sales_details = $stmt_sales_details->fetchAll();
+                                            
+                                            if (!empty($sales_details)): ?>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-striped">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Date</th>
+                                                                <th>Vendeur</th>
+                                                                <th>Montant</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <?php foreach ($sales_details as $sale): ?>
+                                                                <tr>
+                                                                    <td><?php echo date('d/m H:i', strtotime($sale['created_at'])); ?></td>
+                                                                    <td><?php echo htmlspecialchars($sale['first_name'] . ' ' . $sale['last_name']); ?></td>
+                                                                    <td><?php echo number_format($sale['final_amount'], 2); ?>€</td>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <p class="text-muted small">Total ventes: <strong><?php echo number_format($sales_result['sales_revenue'], 2); ?>€</strong></p>
+                                            <?php else: ?>
+                                                <p class="text-muted">Aucune vente enregistrée pour cette période.</p>
+                                                <p class="text-muted small">Total ventes: <strong>0,00€</strong></p>
+                                            <?php endif;
+                                        } catch (Exception $e) {
+                                            echo '<p class="text-danger">Erreur lors du chargement des ventes.</p>';
+                                        }
+                                        ?>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <h6 class="text-primary"><i class="fas fa-broom me-2"></i>Services de ménage</h6>
+                                        <?php
+                                        try {
+                                            $stmt_cleaning_details = $db->prepare("
+                                                SELECT cs.*, u.first_name, u.last_name
+                                                FROM cleaning_services cs
+                                                LEFT JOIN users u ON cs.user_id = u.id
+                                                WHERE DATE(cs.start_time) >= ? AND DATE(cs.start_time) <= ? AND cs.status = 'completed'
+                                                ORDER BY cs.start_time DESC
+                                                LIMIT 10
+                                            ");
+                                            $stmt_cleaning_details->execute([$week_start, $week_end]);
+                                            $cleaning_details = $stmt_cleaning_details->fetchAll();
+                                            
+                                            if (!empty($cleaning_details)): ?>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-striped">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Date</th>
+                                                                <th>Employé</th>
+                                                                <th>Ménages</th>
+                                                                <th>Salaire</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <?php foreach ($cleaning_details as $cleaning): ?>
+                                                                <tr>
+                                                                    <td><?php echo date('d/m H:i', strtotime($cleaning['start_time'])); ?></td>
+                                                                    <td><?php echo htmlspecialchars($cleaning['first_name'] . ' ' . $cleaning['last_name']); ?></td>
+                                                                    <td><?php echo $cleaning['cleaning_count']; ?></td>
+                                                                    <td><?php echo number_format($cleaning['total_salary'], 2); ?>$</td>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <p class="text-muted small">Total ménages: <strong><?php echo number_format($cleaning_result['cleaning_revenue'], 2); ?>$</strong></p>
+                                            <?php else: ?>
+                                                <p class="text-muted">Aucun service de ménage enregistré pour cette période.</p>
+                                                <p class="text-muted small">Total ménages: <strong>0,00$</strong></p>
+                                            <?php endif;
+                                        } catch (Exception $e) {
+                                            echo '<p class="text-danger">Erreur lors du chargement des services de ménage.</p>';
+                                        }
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Détails du calcul des impôts -->
                 <div class="row mb-4">
                     <div class="col-12">
